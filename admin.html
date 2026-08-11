@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Javid - Live Chat Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+  <h1 class="text-2xl font-bold mb-4">Live Chat Admin</h1>
+  
+  <div class="mb-4">
+    <button id="toggle-live" class="bg-blue-600 px-4 py-2 rounded">Enable Live Mode</button>
+    <span id="live-status" class="ml-4 text-gray-400">Live mode is OFF</span>
+  </div>
+
+  <div id="messages" class="bg-gray-800 p-4 rounded h-96 overflow-y-auto mb-4 border border-gray-700"></div>
+
+  <form id="reply-form" class="flex gap-2">
+    <input type="text" id="reply-input" class="flex-1 bg-gray-800 border border-gray-700 rounded px-4 py-2" placeholder="Type a reply...">
+    <button type="submit" class="bg-green-600 px-4 py-2 rounded">Send</button>
+  </form>
+
+  <script>
+    const API_BASE = "http://localhost:8787";
+    let isLive = false;
+
+    async function checkStatus() {
+      const res = await fetch(`${API_BASE}/api/admin/status`);
+      const data = await res.json();
+      isLive = data.is_live;
+      document.getElementById('live-status').textContent = isLive ? "Live mode is ON (Visitors see Green Light)" : "Live mode is OFF (RAG answering)";
+      document.getElementById('toggle-live').textContent = isLive ? "Disable Live Mode" : "Enable Live Mode";
+      document.getElementById('toggle-live').className = isLive ? "bg-red-600 px-4 py-2 rounded" : "bg-blue-600 px-4 py-2 rounded";
+      
+      const msgs = data.messages;
+      const box = document.getElementById('messages');
+      box.innerHTML = msgs.map(m => `<div class="mb-2"><strong class="${m.role==='user'?'text-blue-400':'text-green-400'}">${m.role}:</strong> ${m.content}</div>`).join('');
+    }
+
+    document.getElementById('toggle-live').addEventListener('click', async () => {
+      await fetch(`${API_BASE}/api/admin/toggle`, { method: 'POST' });
+      checkStatus();
+    });
+
+    document.getElementById('reply-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('reply-input');
+      if(!input.value) return;
+      await fetch(`${API_BASE}/api/admin/reply`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ reply: input.value })
+      });
+      input.value = '';
+      checkStatus();
+    });
+
+    setInterval(checkStatus, 2000);
+    checkStatus();
+  </script>
+</body>
+</html>

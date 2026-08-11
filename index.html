@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Javid — AI Engineer & Automation Specialist</title>
+<meta name="description" content="AI Engineer specializing in multi-agent orchestration, LLM integration, and autonomous workflow automation with Python, LangGraph, and n8n." />
+
+<!-- ============================================================
+     FONTS
+     ============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     TAILWIND (CDN build) + custom design tokens
+     ============================================================ -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Palette note: dropped the copper→slate gradient (the default every
+  // AI-generated dark portfolio reaches for) in favor of a single warm
+  // signature accent — copper — against true neutral graphite glass, closer
+  // to how Apple's actual Liquid Glass tints are restrained and content-led
+  // rather than neon.
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          obsidian: '#0A0A0C',
+          obsidian2: '#111114',
+          glass: 'rgba(255,255,255,0.045)',
+          glassBorder: 'rgba(255,255,255,0.09)',
+          copper: { DEFAULT: '#D98A4A', soft: '#F0B87E', dim: '#8A5A30' },
+          slate: { DEFAULT: '#6B7685', soft: '#9AA3B0' },
+          ink: '#EDEDEF',
+          mute: '#93949C',
+          mute2: '#5C5D64',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['Inter', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        boxShadow: {
+          glow: '0 0 40px -8px rgba(217,138,74,0.30)',
+          glowViolet: '0 0 40px -8px rgba(107,118,133,0.30)',
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Lucide icon set -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<style>
+  :root{
+    --obsidian:#0B0F19;
+  }
+  *{ scroll-behavior: smooth; }
+  html,body{ background:var(--obsidian); }
+  body{
+    font-family:'Inter', sans-serif;
+    color:#E9ECF4;
+    overflow-x:hidden;
+    cursor:default;
+  }
+  ::selection{ background:rgba(217,138,74,0.35); color:#fff; }
+
+  /* thin, calm scrollbar */
+  ::-webkit-scrollbar{ width:9px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.12); border-radius:99px; }
+  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.2); }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    display: flex;
+    white-space: nowrap;
+    animation: marquee 20s linear infinite;
+  }
+
+  @keyframes armWave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-22deg); }
+    75% { transform: rotate(18deg); }
+  }
+  .animate-arm-wave {
+    animation: armWave 2s infinite ease-in-out;
+  }
+  @keyframes waveEmoji {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(16deg); }
+    40% { transform: rotate(-10deg); }
+    60% { transform: rotate(16deg); }
+  }
+  .animate-wave-hand {
+    display: inline-block;
+    transform-origin: bottom right;
+    animation: waveEmoji 1.4s infinite ease-in-out;
+  }
+
+  /* ============================================================
+     LIQUID GLASS SURFACES
+     ============================================================ */
+  .glass{
+    background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-strong{
+    background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+  }
+  .glass-hairline{ border:1px solid rgba(255,255,255,0.08); }
+
+  /* Fluid, morphing background blobs — the "liquid" in liquid glass */
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter: blur(90px);
+    opacity:0.35;
+    will-change: transform;
+    pointer-events:none;
+  }
+  @keyframes drift1{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    33%{ transform: translate(4%, 6%) scale(1.08); }
+    66%{ transform: translate(-3%, -4%) scale(0.96); }
+  }
+  @keyframes drift2{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(-6%, 5%) scale(1.1); }
+  }
+  @keyframes drift3{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    40%{ transform: translate(5%, -5%) scale(0.94); }
+    70%{ transform: translate(-4%, 3%) scale(1.05); }
+  }
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+  .font-display{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+  .font-mono{ font-family:'JetBrains Mono', monospace; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    font-size:0.72rem;
+    color:#F0B87E;
+  }
+
+  /* ============================================================
+     SCROLL REVEAL
+     ============================================================ */
+  .reveal{
+    opacity:0;
+    transform: translateY(28px);
+    transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+  }
+  .reveal.in-view{ opacity:1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+    .reveal{ opacity:1; transform:none; }
+  }
+
+  /* ============================================================
+     ORCHESTRATION VISUAL
+     ============================================================ */
+  .node-card{
+    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), box-shadow 0.5s ease, border-color 0.5s ease;
+  }
+  .node-card:hover{
+    transform: translateY(-4px);
+    border-color: rgba(103,232,249,0.35);
+    box-shadow: 0 0 50px -10px rgba(217,138,74,0.4);
+  }
+  .packet{
+    filter: drop-shadow(0 0 6px rgba(103,232,249,0.9));
+  }
+  .flow-path{
+    stroke-dasharray: 6 8;
+    animation: dashmove 2.4s linear infinite;
+  }
+  @keyframes dashmove{ to{ stroke-dashoffset: -140; } }
+
+  .pulse-ring{
+    animation: pulseRing 2.6s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+  @keyframes pulseRing{
+    0%{ transform:scale(0.9); opacity:0.6; }
+    70%{ transform:scale(1.6); opacity:0; }
+    100%{ opacity:0; }
+  }
+
+  /* ============================================================
+     UTILITIES
+     ============================================================ */
+  .grad-text{
+    background: linear-gradient(100deg, #F0B87E 0%, #D98A4A 55%, #8A5A30 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .btn-primary{
+    background: linear-gradient(135deg, #E8A05C, #C97832);
+    box-shadow: 0 8px 30px -8px rgba(217,138,74,0.5);
+  }
+  .card-hover{ transition: transform .5s cubic-bezier(.16,1,.3,1), border-color .5s ease, box-shadow .5s ease; }
+  .card-hover:hover{ transform: translateY(-6px); border-color:rgba(255,255,255,0.18); box-shadow:0 20px 60px -15px rgba(0,0,0,0.5); }
+
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; }
+
+  /* terminal caret */
+  .caret{
+    display:inline-block; width:7px; height:1em; background:#F0B87E; margin-left:2px;
+    animation: blink 1s step-end infinite; vertical-align: -2px;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  /* nav underline */
+  .nav-link{ position:relative; }
+  .nav-link::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:1px;
+    background: linear-gradient(90deg,#D98A4A,#6B7685);
+    transition: width .35s ease;
+  }
+  .nav-link:hover::after{ width:100%; }
+</style>
+</head>
+
+<body class="antialiased selection:bg-copper/30">
+
+<!-- ================================================================
+     AMBIENT BACKGROUND — liquid morphing blobs (fixed, behind everything)
+     ================================================================ -->
+<div class="fixed inset-0 -z-10 overflow-hidden bg-obsidian">
+  <div class="blob w-[36rem] h-[36rem] bg-copper/40 top-[-8%] left-[-10%]" style="animation: drift1 22s ease-in-out infinite;"></div>
+  <div class="blob w-[30rem] h-[30rem] bg-slate/40 top-[10%] right-[-12%]" style="animation: drift2 26s ease-in-out infinite;"></div>
+  <div class="blob w-[26rem] h-[26rem] bg-copper/25 bottom-[-10%] left-[20%]" style="animation: drift3 30s ease-in-out infinite;"></div>
+  <div class="absolute inset-0" style="background: radial-gradient(ellipse at 50% 0%, transparent 0%, #0B0F19 70%);"></div>
+  <!-- fine grain noise for premium texture -->
+  <svg class="absolute inset-0 w-full h-full opacity-[0.025]"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+</div>
+
+<!-- ================================================================
+     NAVIGATION
+     ================================================================ -->
+<header id="site-nav" class="fixed top-0 inset-x-0 z-50 transition-all duration-500">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div id="nav-inner" class="mt-4 flex items-center justify-between rounded-2xl px-5 py-3.5 transition-all duration-500">
+      <a href="#top" class="font-display font-semibold text-lg tracking-tight flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-copper shadow-[0_0_12px_2px_rgba(217,138,74,0.8)]"></span>
+        <span id="brand-name">Javid</span><span class="text-mute font-normal">.dev</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm text-mute font-medium">
+        <a href="#matrix" class="nav-link hover:text-ink transition-colors">Capabilities</a>
+        <a href="#stack" class="nav-link hover:text-ink transition-colors">Stack</a>
+        <a href="#work" class="nav-link hover:text-ink transition-colors">Case Studies</a>
+        <a href="#terminal" class="nav-link hover:text-ink transition-colors">Playground</a>
+        <a href="#about" class="nav-link hover:text-ink transition-colors">About</a>
+      </nav>
+      <a href="#contact" class="btn-primary text-sm font-semibold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity">
+        Let's Talk
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ================================================================
+     HERO
+     ================================================================ -->
+<section class="relative min-h-screen flex items-center pt-24 pb-10 px-6 lg:px-10">
+  <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+
+    <!-- Copy -->
+    <div class="reveal">
+      <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-7">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span class="eyebrow text-mute" id="hero-status">Open to AI Engineering Internships &amp; Collaborations</span>
+      </div>
+
+      <h1 class="font-display font-semibold text-5xl sm:text-6xl lg:text-[3.4rem] xl:text-6xl leading-[1.06] tracking-tight">
+        I build <span class="grad-text">autonomous systems</span> that turn hours of manual work into seconds.
+      </h1>
+
+      <p class="mt-6 text-lg text-mute leading-relaxed max-w-xl">
+        AI Engineer specializing in multi-agent orchestration, LLM integration, and enterprise workflow automation —
+        engineering deterministic, production-grade pipelines with Python, LangGraph, and n8n.
+      </p>
+
+      <div class="mt-9 flex flex-wrap items-center gap-4">
+        <a href="#work" class="btn-primary text-white font-semibold px-6 py-3.5 rounded-2xl flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <i data-lucide="rocket" class="w-4 h-4"></i> View Case Studies
+        </a>
+        <a href="#terminal" class="glass hover:bg-white/[0.06] text-ink font-semibold px-6 py-3.5 rounded-2xl flex items-center gap-2 transition-colors">
+          <i data-lucide="terminal" class="w-4 h-4 text-copper"></i> Deploy an Agent
+        </a>
+      </div>
+
+      <div class="mt-14 flex items-center gap-8 text-sm text-mute2" id="hero-stats">
+        <!-- Populated dynamically from CONFIG.heroStats -->
+      </div>
+    </div>
+
+    <!-- Multi-Agent Orchestration visual anchor -->
+    <div class="reveal relative" style="transition-delay:120ms">
+      <div class="relative glass-strong rounded-[2rem] p-6 sm:p-8 shadow-glow">
+        <div class="flex items-center justify-between mb-5">
+          <span class="chip text-mute flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-copper"></span> live_orchestration.graph
+          </span>
+          <span class="chip text-emerald-400/80">4 agents · active</span>
+        </div>
+
+        <!-- SVG node graph -->
+        <svg viewBox="0 0 460 375" class="w-full h-auto" id="orchestration-svg">
+          <defs>
+            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#D98A4A"/>
+              <stop offset="100%" stop-color="#6B7685"/>
+            </linearGradient>
+          </defs>
+
+          <!-- connective flow paths -->
+          <path id="path-ext-res" d="M 100 75 C 165 75, 165 185, 230 185" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-res-n8n" d="M 230 185 C 285 185, 285 295, 340 295" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-res-py" d="M 230 185 C 170 185, 170 300, 110 300" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-ext-vec" d="M 100 75 C 235 75, 235 130, 370 130" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.35" stroke-width="1.6" class="flow-path"/>
+
+          <!-- data packets travelling along the paths -->
+          <circle r="3.2" fill="#F0B87E" class="packet">
+            <animateMotion dur="3.4s" repeatCount="indefinite">
+              <mpath href="#path-ext-res" />
+            </animateMotion>
+          </circle>
+          <circle r="3.2" fill="#9AA3B0" class="packet">
+            <animateMotion dur="2.8s" repeatCount="indefinite">
+              <mpath href="#path-res-n8n" />
+            </animateMotion>
+          </circle>
+          <circle r="3.2" fill="#F0B87E" class="packet">
+            <animateMotion dur="3.1s" repeatCount="indefinite">
+              <mpath href="#path-res-py" />
+            </animateMotion>
+          </circle>
+          <circle r="2.6" fill="#6B7685" class="packet">
+            <animateMotion dur="4s" repeatCount="indefinite">
+              <mpath href="#path-ext-vec" />
+            </animateMotion>
+          </circle>
+
+          <!-- Node: LLM Reasoner (center, elevated) -->
+          <g transform="translate(230,185)" id="node-res" class="draggable-node cursor-move">
+            <circle r="28" fill="rgba(107,118,133,0.12)" stroke="rgba(107,118,133,0.4)" stroke-width="1"/>
+            <circle r="28" fill="none" stroke="#6B7685" stroke-width="1" class="pulse-ring" style="transform-origin:center;"/>
+            <circle r="4" fill="#9AA3B0"/>
+            <text y="44" text-anchor="middle" fill="#9AA3B0" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">LLM Reasoner</text>
+          </g>
+
+          <!-- Node: Data Extractor -->
+          <g transform="translate(100,75)" id="node-ext" class="draggable-node cursor-move">
+            <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
+            <circle r="3.5" fill="#F0B87E"/>
+            <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Data Extractor</text>
+          </g>
+
+          <!-- Node: n8n Automation Worker -->
+          <g transform="translate(340,295)" id="node-n8n" class="draggable-node cursor-move">
+            <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
+            <circle r="3.5" fill="#F0B87E"/>
+            <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">n8n Worker</text>
+          </g>
+
+          <!-- Node: Python Execution Sandbox -->
+          <g transform="translate(110,300)" id="node-py" class="draggable-node cursor-move">
+            <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
+            <circle r="3.5" fill="#F0B87E"/>
+            <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Python Sandbox</text>
+          </g>
+
+          <!-- Node: Vector DB -->
+          <g transform="translate(370,130)" id="node-vec" class="draggable-node cursor-move">
+            <circle r="18" fill="rgba(107,118,133,0.1)" stroke="rgba(107,118,133,0.35)" stroke-width="1"/>
+            <circle r="2.8" fill="#9AA3B0"/>
+            <text y="34" text-anchor="middle" fill="#9AA3B0" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Vector DB</text>
+          </g>
+        </svg>
+
+
+
+        <p class="text-xs text-mute2 mt-4 leading-relaxed">
+          A simplified live view of how agents pass context and execute tasks autonomously — the same pattern used across the pipelines below.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- scroll cue -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-mute2 reveal">
+    <span class="chip">scroll</span>
+    <i data-lucide="chevron-down" class="w-4 h-4 animate-bounce"></i>
+  </div>
+</section>
+
+<!-- ================================================================
+     TOOLS MARQUEE
+     ================================================================ -->
+<section id="marquee" class="relative py-12 border-y border-white/[0.04] overflow-hidden bg-white/[0.01]">
+  <div class="text-center mb-6"><span class="eyebrow tracking-[0.2em] text-[10px]">TOOLS I INTEGRATE & ENGINEER WITH</span></div>
+  <div class="flex animate-marquee gap-12 sm:gap-24 items-center w-max pl-12 sm:pl-24" id="marquee-track">
+    <!-- Populated dynamically from CONFIG.marqueeTools -->
+  </div>
+</section>
+
+<!-- ================================================================
+     AUTOMATION MATRIX (Capabilities)
+     ================================================================ -->
+<section id="matrix" class="relative py-28 px-6 lg:px-10">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal max-w-2xl mb-16">
+      <span class="eyebrow">The Automation Matrix</span>
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-3 tracking-tight">Where manual work goes to end.</h2>
+      <p class="text-mute mt-4 leading-relaxed">Three core capabilities, applied together, to replace repetitive human effort with autonomous, auditable systems.</p>
+    </div>
+
+    <div id="matrix-grid" class="grid md:grid-cols-3 gap-6">
+      <!-- Populated dynamically from CONFIG.capabilities -->
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     TECH STACK
+     ================================================================ -->
+<section id="stack" class="relative py-16 px-6 lg:px-10">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal glass rounded-[2rem] p-8 sm:p-12">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+        <div>
+          <span class="eyebrow">Tools of the trade</span>
+          <h2 class="font-display font-semibold text-2xl sm:text-3xl mt-3 tracking-tight">Integrated daily, not just listed on a resume.</h2>
+        </div>
+      </div>
+      <div id="stack-groups" class="space-y-8">
+        <!-- Populated dynamically from CONFIG.techStack -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     CASE STUDIES
+     ================================================================ -->
+<section id="work" class="relative py-28 px-6 lg:px-10">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal max-w-2xl mb-16">
+      <span class="eyebrow">Proof of Impact</span>
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-3 tracking-tight">From hours of manual work to seconds of autonomous processing.</h2>
+      <p class="text-mute mt-4 leading-relaxed">Real pipelines, real time saved. This section updates as new projects ship — built to grow with the work.</p>
+    </div>
+
+    <div id="case-studies-list" class="space-y-6">
+      <!-- Populated dynamically from CONFIG.caseStudies -->
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     INTERACTIVE TERMINAL / PLAYGROUND
+     ================================================================ -->
+<section id="terminal" class="relative py-28 px-6 lg:px-10">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal text-center max-w-2xl mx-auto mb-12">
+      <span class="eyebrow">Try it yourself</span>
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-3 tracking-tight">A small window into how these agents run.</h2>
+      <p class="text-mute mt-4 leading-relaxed">Trigger a simulated pipeline below. Nothing here calls a real backend — it's a preview of the interaction pattern used in production.</p>
+    </div>
+
+    <div class="reveal glass-strong rounded-[1.75rem] overflow-hidden shadow-glowViolet">
+      <!-- window chrome -->
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-white/[0.02]">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-[#FF5F57]"></span>
+          <span class="w-3 h-3 rounded-full bg-[#FEBC2E]"></span>
+          <span class="w-3 h-3 rounded-full bg-[#28C840]"></span>
+        </div>
+        <span class="chip text-mute2">agent-playground — zsh</span>
+        <span class="w-14"></span>
+      </div>
+
+      <!-- output -->
+      <div id="terminal-output" class="font-mono text-[13px] leading-relaxed p-6 h-72 overflow-y-auto">
+        <p class="text-mute2">Select a demo below to trigger a simulated run →</p>
+      </div>
+
+      <!-- preset triggers -->
+      <div id="terminal-presets" class="flex flex-wrap gap-3 px-6 pb-6">
+        <!-- Populated dynamically from CONFIG.terminalPresets -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     ABOUT / STORY
+     ================================================================ -->
+<section id="about" class="relative py-28 px-6 lg:px-10">
+  <div class="max-w-7xl mx-auto grid lg:grid-cols-5 gap-12 items-start">
+    <div class="lg:col-span-2 reveal">
+      <span class="eyebrow">Who is Javi</span>
+      <h2 class="font-display font-semibold text-3xl mt-3 tracking-tight">Still 3rd year. Already shipping to production.</h2>
+      <div class="mt-8 flex flex-wrap gap-2" id="about-badges">
+        <!-- Populated dynamically from CONFIG.badges -->
+      </div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="./Mohamed Javid_ RESUME.pdf" target="_blank" class="flex items-center gap-2 btn-primary text-sm px-5 py-2.5 rounded-xl text-white shadow-glow">
+          <i data-lucide="eye" class="w-4 h-4"></i> View Resume
+        </a>
+        <a href="./Mohamed Javid_ RESUME.pdf" download="Mohamed_Javid_Resume.pdf" class="flex items-center gap-2 glass text-sm px-5 py-2.5 rounded-xl hover:bg-white/[0.07] transition-colors">
+          <i data-lucide="download" class="w-4 h-4"></i> Download Resume
+        </a>
+      </div>
+    </div>
+    <div class="lg:col-span-3 reveal space-y-5 text-mute leading-relaxed text-[15px]" id="about-copy" style="transition-delay:120ms">
+      <!-- Populated dynamically from CONFIG.about.paragraphs -->
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     SUBSCRIBE
+     ================================================================ -->
+<section id="subscribe" class="relative py-20 px-6 lg:px-10">
+  <div class="max-w-3xl mx-auto text-center reveal glass-strong rounded-[2rem] p-10 sm:p-14 shadow-glowViolet">
+    <i data-lucide="zap" class="w-8 h-8 text-copper-soft mx-auto mb-4"></i>
+    <h2 class="font-display font-semibold text-2xl sm:text-3xl tracking-tight">Stay updated with AI News</h2>
+    <p class="text-mute mt-3 mb-6">Subscribe to receive the latest updates, tutorials, and insights on AI directly in your inbox.</p>
+    <form id="subscribe-form" class="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+      <input type="email" placeholder="Your email address" required class="flex-1 px-4 py-3 rounded-xl bg-obsidian2/50 border border-white/10 text-sm outline-none focus:border-copper/50 transition-colors">
+      <button type="submit" class="btn-primary px-6 py-3 rounded-xl text-sm font-medium text-white shadow-glow">Subscribe</button>
+    </form>
+  </div>
+</section>
+
+<!-- ================================================================
+     PROJECT ENQUIRY FORM
+     ================================================================ -->
+<section id="enquiry" class="relative py-20 px-6 lg:px-10">
+  <div class="max-w-4xl mx-auto reveal glass-strong rounded-[2rem] p-8 sm:p-14 shadow-glowViolet">
+    <div class="text-center max-w-xl mx-auto mb-10">
+      <span class="eyebrow">Start a Project</span>
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-3 tracking-tight">Need a Multi-Agent Workflow or Automation?</h2>
+      <p class="text-mute mt-3 text-sm leading-relaxed">Tell me about your project, workflow idea, or query. I'll analyze the requirements and get back to you shortly.</p>
+    </div>
+
+    <form id="enquiry-form" class="space-y-5">
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-mono text-mute mb-2">FULL NAME <span class="text-copper-soft">*</span></label>
+          <input type="text" id="enquiry-name" required placeholder="e.g. Alex Morgan" class="w-full px-4 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm outline-none focus:border-copper/50 transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-mono text-mute mb-2">EMAIL ADDRESS <span class="text-copper-soft">*</span></label>
+          <input type="email" id="enquiry-email" required placeholder="alex@company.com" class="w-full px-4 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm outline-none focus:border-copper/50 transition-colors">
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-mono text-mute mb-2">SERVICE / WORKFLOW NEEDED <span class="text-copper-soft">*</span></label>
+          <select id="enquiry-service" required class="w-full px-4 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm text-ink outline-none focus:border-copper/50 transition-colors">
+            <option value="Multi-Agent Workflow">Multi-Agent Workflow (LangGraph / CrewAI)</option>
+            <option value="Agentic Automation">Agentic Workflow & Automation (n8n / Python)</option>
+            <option value="Freelance AI Build">Freelance Build / Custom AI Solution</option>
+            <option value="General Query">General Query / Advisory</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-mono text-mute mb-2">PHONE NUMBER <span class="text-mute2">(Optional)</span></label>
+          <div class="flex gap-2">
+            <select id="enquiry-phone-code" class="w-28 px-3 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm text-ink outline-none focus:border-copper/50 transition-colors">
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+91" selected>🇮🇳 +91</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+971">🇦🇪 +971</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+65">🇸🇬 +65</option>
+            </select>
+            <input type="tel" id="enquiry-phone-num" placeholder="9876543210" class="flex-1 px-4 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm outline-none focus:border-copper/50 transition-colors">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-mono text-mute mb-2">PROJECT BRIEF / MESSAGE</label>
+        <textarea id="enquiry-message" rows="4" placeholder="Briefly describe what you'd like to build or automate..." class="w-full px-4 py-3 rounded-xl bg-obsidian2/60 border border-white/10 text-sm outline-none focus:border-copper/50 transition-colors resize-none"></textarea>
+      </div>
+
+      <button type="submit" class="w-full btn-primary py-3.5 rounded-xl font-medium text-sm text-white shadow-glow flex items-center justify-center gap-2">
+        <i data-lucide="send" class="w-4 h-4"></i> Submit Project Enquiry
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- ================================================================
+     CONTACT
+     ================================================================ -->
+<section id="contact" class="relative py-28 px-6 lg:px-10">
+  <div class="max-w-4xl mx-auto text-center reveal">
+    <div class="glass-strong rounded-[2rem] p-10 sm:p-16 shadow-glow">
+      <span class="eyebrow">Get in touch</span>
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-4 tracking-tight">Have a process worth automating?</h2>
+      <p class="text-mute mt-4 max-w-lg mx-auto leading-relaxed">Open to internships, freelance builds, and collaborations in AI engineering and automation — anywhere in the world.</p>
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-4" id="contact-links">
+        <!-- Populated dynamically from CONFIG.socials -->
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="relative px-6 lg:px-10 pb-10 pt-6">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-mute2 border-t border-white/[0.06] pt-6">
+    <span id="footer-name">© <span id="footer-year"></span> Javid — AI Engineer &amp; Automation Specialist.</span>
+    <span class="font-mono">built with Python, coffee, and too many browser tabs.</span>
+  </div>
+</footer>
+
+<!-- ================================================================
+     ASK JAVI — Movable Waving Robot Mascot (Standalone Character)
+     ================================================================ -->
+<div id="chat-mascot-container" class="fixed bottom-6 right-6 z-50 flex flex-col items-end select-none cursor-grab active:cursor-grabbing group" style="touch-action: none;">
+  <!-- Speech bubble -->
+  <div id="mascot-speech" class="mb-2 glass-strong px-3.5 py-1.5 rounded-2xl rounded-br-none text-xs font-semibold text-ink shadow-glow flex items-center gap-1.5 border border-copper/30 pointer-events-none transition-all duration-300">
+    <span class="text-copper-soft font-mono">Ask Javi!</span>
+  </div>
+
+  <!-- Real Mascot Character (No Enclosed Box!) -->
+  <div id="chat-toggle" aria-label="Ask Javi" class="relative group-hover:scale-105 transition-transform duration-200">
+    <svg viewBox="0 0 100 120" class="w-20 h-24 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)]">
+      <defs>
+        <!-- Blue Mascot Body Gradients -->
+        <linearGradient id="mascotBlue" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4F46E5"/>
+          <stop offset="50%" stop-color="#3B82F6"/>
+          <stop offset="100%" stop-color="#1D4ED8"/>
+        </linearGradient>
+        <linearGradient id="mascotScreen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0F19"/>
+          <stop offset="100%" stop-color="#1E293B"/>
+        </linearGradient>
+        <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      <!-- Cloud Head Shape -->
+      <path d="M 28 32 C 18 32, 12 42, 18 52 C 12 58, 14 70, 24 74 C 30 78, 70 78, 76 74 C 86 70, 88 58, 82 52 C 88 42, 82 32, 72 32 C 66 24, 34 24, 28 32 Z" fill="url(#mascotBlue)" stroke="#818CF8" stroke-width="2.5"/>
+
+      <!-- Legs -->
+      <rect x="36" y="74" width="10" height="16" rx="5" fill="#1D4ED8" stroke="#60A5FA" stroke-width="1.5"/>
+      <rect x="54" y="74" width="10" height="16" rx="5" fill="#1D4ED8" stroke="#60A5FA" stroke-width="1.5"/>
+      <ellipse cx="41" cy="90" rx="6" ry="3" fill="#3B82F6"/>
+      <ellipse cx="59" cy="90" rx="6" ry="3" fill="#3B82F6"/>
+
+      <!-- Screen Face -->
+      <rect x="30" y="38" width="40" height="26" rx="7" fill="url(#mascotScreen)" stroke="#38BDF8" stroke-width="2"/>
+
+      <!-- Terminal Eyes: > _ (Glowing Cyan) -->
+      <g filter="url(#glowCyan)">
+        <path d="M 36 46 L 42 51 L 36 56" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <line x1="52" y1="56" x2="60" y2="56" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+      </g>
+
+      <!-- Chest Terminal Badge >_ -->
+      <rect x="40" y="66" width="20" height="9" rx="3" fill="#1E1B4B" stroke="#6366F1" stroke-width="1"/>
+      <path d="M 43 69.5 L 45 71 L 43 72.5" stroke="#A5B4FC" stroke-width="1" fill="none"/>
+      <line x1="47" y1="72.5" x2="50" y2="72.5" stroke="#A5B4FC" stroke-width="1"/>
+
+      <!-- Left Arm (Waving Arm with animation) -->
+      <g class="animate-arm-wave" style="transform-origin: 22px 56px;">
+        <path d="M 22 56 C 14 50, 10 38, 16 30" stroke="#3B82F6" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <circle cx="16" cy="30" r="4.5" fill="#93C5FD" stroke="#3B82F6" stroke-width="1"/>
+      </g>
+
+      <!-- Right Arm (Resting) -->
+      <path d="M 78 56 C 85 60, 86 68, 82 74" stroke="#3B82F6" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <circle cx="82" cy="74" r="4" fill="#93C5FD"/>
+
+      <!-- Green Status Pulse Dot near head -->
+      <circle cx="76" cy="28" r="4" fill="#10B981" stroke="#065F46" stroke-width="1.5"/>
+    </svg>
+  </div>
+</div>
+
+<div id="chat-panel" class="fixed bottom-24 right-6 z-50 w-[min(92vw,380px)] h-[min(70vh,560px)] glass-strong rounded-[1.75rem] shadow-glow flex-col overflow-hidden hidden">
+  <div class="flex items-center gap-3 px-5 py-4 border-b border-white/10 bg-white/[0.02]">
+    <div class="relative w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+      <i data-lucide="sparkles" class="w-4 h-4 text-copper-soft"></i>
+      <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-obsidian2"></span>
+    </div>
+    <div>
+      <p class="font-display font-semibold text-sm leading-tight flex items-center gap-2">
+        Ask Javid
+        <span id="live-badge" class="hidden text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono">LIVE</span>
+      </p>
+      <p id="chat-subtitle" class="text-[11px] text-mute2">AI Assistant</p>
+    </div>
+  </div>
+
+  <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-[13.5px] leading-relaxed">
+    <div class="flex gap-2.5">
+      <div class="w-7 h-7 shrink-0 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-copper-soft"></i>
+      </div>
+      <div class="glass rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-mute max-w-[85%]">
+        Welcome! Ask me about Javid's AI engineering work, multi-agent architectures, project case studies, or schedule a direct consultation.
+      </div>
+    </div>
+  </div>
+
+  <!-- Predefined questions / quick chips -->
+  <div class="px-3.5 py-2 border-t border-white/5 flex flex-wrap gap-1.5 text-xs bg-white/[0.01]">
+    <button class="quick-chip chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-copper-soft flex items-center gap-1.5" data-query="Schedule a meeting with Javid">
+      <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Schedule Consultation
+    </button>
+    <button class="quick-chip chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5" data-query="What are his core skills and tech stack?">
+      <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Core Stack
+    </button>
+    <button class="quick-chip chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5" data-query="Tell me about his multi-agent workflows">
+      <i data-lucide="bot" class="w-3.5 h-3.5"></i> Agent Workflows
+    </button>
+    <button class="quick-chip chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5" data-query="I want to talk to Javid directly">
+      <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Talk to Javid
+    </button>
+  </div>
+
+  <form id="chat-form" class="flex items-center gap-2 px-4 py-3.5 border-t border-white/10 bg-white/[0.02]">
+    <input id="chat-input" type="text" autocomplete="off" placeholder="How is Javid, actually?"
+      class="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm placeholder:text-mute2 focus:outline-none focus:border-copper/40 transition-colors" />
+    <button type="submit" class="btn-primary w-10 h-10 rounded-xl flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity">
+      <i data-lucide="arrow-up" class="w-4 h-4 text-white"></i>
+    </button>
+  </form>
+</div>
+
+<!-- ====================================================================
+     ============================  CONFIG  ==============================
+     Everything on this page is rendered from the object below.
+     To update the site — add a project, change a stat, edit copy —
+     you only need to edit CONFIG. No HTML editing required.
+     ==================================================================== -->
+<script>
+const CONFIG = {
+
+  heroStats: [
+    { value: "3rd Year", label: "B.Tech IT student" },
+    { value: "4+", label: "hackathon finishes" },
+    { value: "Kauvery Hospitals", label: "current internship" },
+  ],
+
+  // -------------------------------------------------------------
+  // AUTOMATION MATRIX — capability cards
+  // -------------------------------------------------------------
+  capabilities: [
+    {
+      icon: "network",
+      title: "Multi-Agent Systems",
+      description: "Designing scalable, deterministic agent graphs with LangGraph — where each agent has a defined role, memory, and handoff logic instead of a single fragile prompt.",
+      tags: ["LangGraph", "CrewAI", "Agentic AI"]
+    },
+    {
+      icon: "database-zap",
+      title: "LLM & RAG Integration",
+      description: "Building context-aware applications on top of vector databases and retrieval pipelines, grounded in real data instead of hallucinated answers.",
+      tags: ["LlamaIndex", "LangChain", "Vector DBs"]
+    },
+    {
+      icon: "workflow",
+      title: "Workflow Automation",
+      description: "Stitching APIs, scrapers, and internal tools together with n8n and Python scripting to remove manual steps from real business processes.",
+      tags: ["n8n", "Python", "FastAPI"]
+    },
+  ],
+
+  // -------------------------------------------------------------
+  // TECH STACK — grouped, easy to extend
+  // -------------------------------------------------------------
+  techStack: [
+    {
+      category: "Languages & Backend",
+      items: [
+        { name: "Python", color: "#F0B87E" },
+        { name: "FastAPI", color: "#F0B87E" },
+        { name: "PostgreSQL", color: "#F0B87E" },
+      ]
+    },
+    {
+      category: "AI / LLM Orchestration",
+      items: [
+        { name: "LangGraph", color: "#9AA3B0" },
+        { name: "LangChain", color: "#9AA3B0" },
+        { name: "CrewAI", color: "#9AA3B0" },
+        { name: "LlamaIndex", color: "#9AA3B0" },
+        { name: "OpenAI API", color: "#9AA3B0" },
+        { name: "Gemini API", color: "#9AA3B0" },
+      ]
+    },
+    {
+      category: "Automation & Data",
+      items: [
+        { name: "n8n", color: "#F0B87E" },
+        { name: "Playwright", color: "#F0B87E" },
+        { name: "Chroma / Vector DBs", color: "#F0B87E" },
+        { name: "OpenCV", color: "#F0B87E" },
+      ]
+    },
+  ],
+
+  // -------------------------------------------------------------
+  // CASE STUDIES — GitHub Showcase Projects
+  // -------------------------------------------------------------
+  // -------------------------------------------------------------
+  // CASE STUDIES — Real GitHub Flagship Projects
+  // -------------------------------------------------------------
+  caseStudies: [
+    {
+      title: "BillAgent Pro — Multi-Agent Expense Intelligence",
+      industry: "FinTech & AI Bill Processing (4th Place AI Agentathon)",
+      summary: "AI bill management system leveraging Gemini 1.5 Flash Vision. Features a multi-agent pipeline (OCR -> Validation -> Learning) to extract vendor, line items, totals, and tax with confidence scoring and interactive Recharts analytics.",
+      before: { value: "Manual", label: "data entry & line extraction" },
+      after: { value: "~2-3 sec", label: "instant AI OCR & validation" },
+      metrics: [
+        { value: "Multi-Agent", label: "Validation & Learning loops" },
+        { value: "JWT Auth", label: "Isolated user tenant data" }
+      ],
+      stack: ["React 19", "TypeScript", "Django 5", "Gemini 1.5 Flash", "Recharts"]
+    },
+    {
+      title: "MediCode AI — EHR & Medical Coding Platform",
+      industry: "HealthTech & Clinical Automation (ICD-11 / FHIR R4)",
+      summary: "AI medical coding platform automating ICD-11, CPT, and SNOMED CT code generation from clinical notes. Validates HL7 FHIR R4 compliance, generates SOAP summaries, and performs patient risk stratification.",
+      before: { value: "Manual", label: "clinical coding & audit" },
+      after: { value: "Instant", label: "ICD-11 & CPT extraction" },
+      metrics: [
+        { value: "HL7 FHIR", label: "R4 compliant validation" },
+        { value: "Dockerized", label: "Full-stack container setup" }
+      ],
+      stack: ["React 19", "Django 5", "Gemini 2.0 Flash", "Docker", "HL7 FHIR"]
+    },
+    {
+      title: "PolicyPulse AI — Autonomous Compliance Platform",
+      industry: "GovTech & RegTech (GDG Delhi HACKFEST 2.0 Winner)",
+      summary: "Autonomous policy compliance platform. Ingests GDPR/SOC 2/ISO 27001 policy PDFs, scans company databases, and runs a ReAct Agent loop (Perceive -> Reason -> Act -> Reflect) alongside 4 specialist agents to remediate violations autonomously.",
+      before: { value: "Months", label: "undetected policy breaches" },
+      after: { value: "Autonomous", label: "real-time scanning & fix" },
+      metrics: [
+        { value: "GDG Delhi", label: "HACKFEST Top Project Winner" },
+        { value: "ReAct Loop", label: "4 Specialist AI Agents" }
+      ],
+      stack: ["FastAPI", "React 19", "MongoDB", "Gemini 1.5 Flash", "Docker"]
+    },
+    {
+      title: "Aura-NPU — Offline Neuro-Inclusive Assistant",
+      industry: "Accessibility & Edge AI (AMD Slingshot 2026 Hackathon)",
+      summary: "Multimodal AI assistant running 100% offline on the AMD Ryzen AI 300 Series XDNA 2 NPU (~100ms latency via VitisAI EP). Supports all 22 official Indian languages, ADHD Focus Mode (5-step chunking + Pomodoro), and tamper-evident SHA-256 integrity logs.",
+      before: { value: "Cloud Only", label: "English-only AI dependency" },
+      after: { value: "~100 ms", label: "100% local NPU edge inference" },
+      metrics: [
+        { value: "22 Languages", label: "Full Indian language set" },
+        { value: "Zero Cloud", label: "100% offline privacy safe" }
+      ],
+      stack: ["Python 3.11", "NiceGUI", "AMD Ryzen AI NPU", "VitisAI ONNX", "Ollama"]
+    },
+    {
+      title: "Medi-Flow India — National Blood Supply Network",
+      industry: "Healthcare Logistics (AI4DEV 2026 Hackathon)",
+      summary: "Client-side national blood supply coordination network across 12 Indian cities and 46 hospitals. Uses a 4-step AI Agent pipeline (Watchman -> Bridge -> Mobilize -> Dispatch) to monitor shortages, find surplus stock, alert 84-day eligible donors, and route ambulances.",
+      before: { value: "Critical", label: "uncoordinated blood shortages" },
+      after: { value: "Real-time", label: "AI stock watch & smart routing" },
+      metrics: [
+        { value: "46 Hospitals", label: "Across 12 major Indian cities" },
+        { value: "4 AI Agents", label: "Autonomous supply routing" }
+      ],
+      stack: ["Vanilla JS", "HTML5", "CSS3", "Leaflet.js", "Haversine Distance"]
+    },
+    {
+      title: "MarketMind AI — Multi-Agent Market Intelligence",
+      industry: "Competitive Intelligence (SNS GenAI Sprint)",
+      summary: "Multi-agent competitive intelligence platform for small businesses. Runs a 4-agent LangGraph StateGraph pipeline (Scout -> Analyst -> Strategist -> SMM) to scrape competitor sites, perform SWOT analysis, generate strategies, and dispatch WhatsApp alerts.",
+      before: { value: "Manual", label: "competitor & market tracking" },
+      after: { value: "1-Click", label: "full strategy & 24hr social plan" },
+      metrics: [
+        { value: "LangGraph", label: "4-agent sequential workflow" },
+        { value: "WhatsApp", label: "Automated alert dispatches" }
+      ],
+      stack: ["Next.js 14", "FastAPI", "LangGraph 0.2", "Groq Llama 3.3", "Twilio"]
+    },
+  ],
+
+  // -------------------------------------------------------------
+  // TERMINAL PLAYGROUND PRESETS
+  // -------------------------------------------------------------
+  terminalPresets: [
+    {
+      label: "Trigger n8n Webhook Demo",
+      icon: "webhook",
+      lines: [
+        "$ curl -X POST https://n8n.internal/webhook/content-planner",
+        "→ payload received: { source: 'sheet_row_42' }",
+        "→ AI Agent node: drafting content package...",
+        "→ HTML formatter: packaging output...",
+        "→ Gmail node: sending daily digest...",
+      ],
+      result: "✓ Workflow completed in 1.8s — 4/4 nodes succeeded"
+    },
+    {
+      label: "Simulate a LangGraph Loop",
+      icon: "repeat",
+      lines: [
+        "$ python run_graph.py --agent reasoner",
+        "→ state: { step: 1, task: 'verify_claim' }",
+        "→ reasoner_agent: evidence insufficient, looping back",
+        "→ extractor_agent: fetching additional sources...",
+        "→ reasoner_agent: evidence sufficient, exiting loop",
+      ],
+      result: "✓ Graph converged after 2 iterations"
+    },
+    {
+      label: "Run a RAG Query",
+      icon: "search",
+      lines: [
+        "$ python query.py \"latest geriatric CME activity\"",
+        "→ embedding query...",
+        "→ vector_db: top_k=5 chunks retrieved",
+        "→ llm_reasoner: synthesizing grounded answer...",
+      ],
+      result: "✓ Answer generated with 5 cited sources"
+    },
+  ],
+
+  // -------------------------------------------------------------
+  // ABOUT SECTION
+  // -------------------------------------------------------------
+  badges: ["3rd Year B.Tech IT — SNS College of Technology", "AI & Automation Intern — Kauvery Hospitals", "4th Place — AI Agentathon", "Top Project — HACKFEST 2.0 (GDG Delhi)"],
+
+  about: {
+    paragraphs: [
+      "I'm currently a 3rd-year B.Tech Information Technology student, working as an AI &amp; Automation Engineering Intern at Kauvery Hospitals in Chennai — building AI-driven automation pipelines, competitive intelligence systems, and digital strategy tooling for hospital leadership.",
+      "My focus is using LLMs for reasoning and orchestration rather than content generation: multi-agent systems that extract, verify, and act on real data, with strict guardrails against hallucination. Most of my recent work lives in Python, LangGraph, and the Gemini API.",
+      "Outside of engineering, I care about photography, video editing, and visual design — which shows up in how I think about interfaces: calm, deliberate, and free of clutter.",
+      "This section, like the rest of the site, is built to grow. As I ship new projects through the rest of my degree, they'll show up above in Case Studies — no rebuild required."
+    ]
+  },
+
+  // -------------------------------------------------------------
+  // CONTACT / SOCIAL LINKS
+  // -------------------------------------------------------------
+  socials: [
+    { label: "Email", icon: `<svg class="w-4 h-4 text-copper-soft" style="stroke: currentColor;" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`, url: "mailto:connectjavid27@gmail.com" },
+    { label: "GitHub", icon: `<svg class="w-4 h-4 text-copper-soft" style="stroke: currentColor;" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>`, url: "https://github.com/Md-javid" },
+    { label: "LinkedIn", icon: `<svg class="w-4 h-4 text-copper-soft" style="stroke: currentColor;" fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`, url: "https://linkedin.com/in/javidsiast" },
+  ],
+  marqueeTools: [
+    { name: "FastAPI", icon: "server" },
+    { name: "Playwright", icon: "play-circle" },
+    { name: "PostgreSQL", icon: "database" },
+    { name: "Python", icon: "code" },
+    { name: "LangGraph", icon: "git-merge" },
+    { name: "n8n", icon: "workflow" },
+    { name: "React", icon: "layout" },
+    { name: "Docker", icon: "box" }
+  ]
+};
+
+// ======================================================================
+// RENDERERS — turn CONFIG into DOM. Edit CONFIG above, not the code below.
+// ======================================================================
+
+function el(html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+function renderHeroStats(){
+  const wrap = document.getElementById('hero-stats');
+  wrap.innerHTML = CONFIG.heroStats.map((s,i) => `
+    <div class="flex flex-col ${i>0 ? 'border-l border-white/10 pl-8' : ''}">
+      <span class="font-display text-ink font-semibold text-lg">${s.value}</span>
+      <span class="text-xs mt-0.5">${s.label}</span>
+    </div>
+  `).join('');
+}
+
+function renderCapabilities(){
+  const grid = document.getElementById('matrix-grid');
+  grid.innerHTML = CONFIG.capabilities.map((c, i) => `
+    <div class="reveal glass card-hover rounded-3xl p-7" style="transition-delay:${i*100}ms">
+      <div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-6" style="background:linear-gradient(135deg, rgba(217,138,74,0.18), rgba(107,118,133,0.18));">
+        <i data-lucide="${c.icon}" class="w-5 h-5 text-copper-soft"></i>
+      </div>
+      <h3 class="font-display font-semibold text-lg tracking-tight">${c.title}</h3>
+      <p class="text-mute text-sm mt-3 leading-relaxed">${c.description}</p>
+      <div class="flex flex-wrap gap-2 mt-6">
+        ${c.tags.map(t => `<span class="chip px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-mute">${t}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStack(){
+  const wrap = document.getElementById('stack-groups');
+  wrap.innerHTML = CONFIG.techStack.map((group, gi) => `
+    <div class="reveal" style="transition-delay:${gi*80}ms">
+      <p class="chip text-mute2 mb-3">${group.category}</p>
+      <div class="flex flex-wrap gap-2.5">
+        ${group.items.map(item => `
+          <span class="chip flex items-center gap-2 px-3.5 py-2 rounded-xl glass hover:bg-white/[0.07] transition-colors">
+            <span class="dot" style="background:${item.color}; box-shadow:0 0 8px ${item.color}"></span>
+            ${item.name}
+          </span>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCaseStudies(){
+  const wrap = document.getElementById('case-studies-list');
+  wrap.innerHTML = CONFIG.caseStudies.map((cs, i) => `
+    <div class="reveal glass card-hover rounded-3xl p-7 sm:p-9 grid lg:grid-cols-12 gap-8 items-center" style="transition-delay:${i*90}ms">
+      <div class="lg:col-span-5">
+        <span class="chip text-mute2">${cs.industry}</span>
+        <h3 class="font-display font-semibold text-xl sm:text-2xl mt-2 tracking-tight">${cs.title}</h3>
+        <p class="text-mute text-sm mt-3 leading-relaxed">${cs.summary}</p>
+        <div class="flex flex-wrap gap-2 mt-5">
+          ${cs.stack.map(t => `<span class="chip px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-mute2">${t}</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="lg:col-span-4 flex items-center justify-center gap-3">
+        <div class="text-center flex-1 rounded-2xl bg-white/[0.03] border border-white/10 py-5 px-3">
+          <p class="font-display font-semibold text-lg text-mute">${cs.before.value}</p>
+          <p class="text-[11px] text-mute2 mt-1">${cs.before.label}</p>
+        </div>
+        <i data-lucide="arrow-right" class="w-5 h-5 text-copper shrink-0"></i>
+        <div class="text-center flex-1 rounded-2xl border border-copper/30 py-5 px-3" style="background:linear-gradient(160deg, rgba(217,138,74,0.12), rgba(107,118,133,0.08));">
+          <p class="font-display font-semibold text-lg grad-text">${cs.after.value}</p>
+          <p class="text-[11px] text-mute2 mt-1">${cs.after.label}</p>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3 flex lg:flex-col gap-4">
+        ${cs.metrics.map(m => `
+          <div class="flex-1">
+            <p class="font-display font-semibold text-base">${m.value}</p>
+            <p class="text-[11px] text-mute2 mt-0.5">${m.label}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTerminalPresets(){
+  const wrap = document.getElementById('terminal-presets');
+  wrap.innerHTML = CONFIG.terminalPresets.map((p, i) => `
+    <button data-preset="${i}" class="terminal-btn flex items-center gap-2 chip px-4 py-2.5 rounded-xl glass hover:bg-white/[0.08] hover:border-copper/30 transition-colors">
+      <i data-lucide="${p.icon}" class="w-3.5 h-3.5 text-copper-soft"></i> ${p.label}
+    </button>
+  `).join('');
+
+  wrap.querySelectorAll('.terminal-btn').forEach(btn => {
+    btn.addEventListener('click', () => runTerminalDemo(CONFIG.terminalPresets[+btn.dataset.preset]));
+  });
+}
+
+let terminalBusy = false;
+function runTerminalDemo(preset){
+  if(terminalBusy) return;
+  terminalBusy = true;
+  const out = document.getElementById('terminal-output');
+  out.innerHTML = '';
+  let delay = 0;
+  preset.lines.forEach((line, i) => {
+    delay += 480;
+    setTimeout(() => {
+      const p = document.createElement('p');
+      p.className = i===0 ? 'text-ink' : 'text-mute mt-1';
+      p.textContent = line;
+      out.appendChild(p);
+      out.scrollTop = out.scrollHeight;
+    }, delay);
+  });
+  delay += 550;
+  setTimeout(() => {
+    const p = document.createElement('p');
+    p.className = 'text-emerald-400 mt-3 font-medium';
+    p.textContent = preset.result;
+    out.appendChild(p);
+    out.scrollTop = out.scrollHeight;
+    terminalBusy = false;
+  }, delay);
+}
+
+function renderAbout(){
+  document.getElementById('about-badges').innerHTML = CONFIG.badges.map(b => `
+    <span class="chip px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 text-mute">${b}</span>
+  `).join('');
+  document.getElementById('about-copy').innerHTML = CONFIG.about.paragraphs.map(p => `<p>${p}</p>`).join('');
+}
+
+function renderContact(){
+  document.getElementById('contact-links').innerHTML = CONFIG.socials.map(s => `
+    <a href="${s.url}" target="_blank" rel="noopener" class="flex items-center gap-2 glass hover:bg-white/[0.07] px-5 py-3 rounded-xl text-sm font-medium transition-colors">
+      ${s.icon} ${s.label}
+    </a>
+  `).join('');
+}
+
+// ======================================================================
+// INTERACTIONS: nav shrink on scroll, scroll-reveal, footer year
+// ======================================================================
+function initNavScroll(){
+  const inner = document.getElementById('nav-inner');
+  const onScroll = () => {
+    if(window.scrollY > 24){
+      inner.classList.add('glass-strong');
+      inner.style.boxShadow = '0 10px 40px -20px rgba(0,0,0,0.6)';
+    } else {
+      inner.classList.remove('glass-strong');
+      inner.style.boxShadow = 'none';
+    }
+  };
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+}
+
+function initReveal(){
+  const items = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.classList.add('in-view');
+      } else {
+        e.target.classList.remove('in-view');
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+  items.forEach(i => io.observe(i));
+}
+
+function initFooterYear(){
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+}
+
+// ======================================================================
+// ASK JAVID — chat widget
+// ======================================================================
+// Point this at your deployed backend. Defaults to local dev.
+// See /backend/README for how to run it — CORS is already open there.
+const CHAT_API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') ? 'http://localhost:8787' : window.location.origin;
+
+let chatHistory = []; // [{role: 'user'|'assistant', content: string}]
+let chatOpen = false;
+
+function toggleChat(forceOpen){
+  const panel = document.getElementById('chat-panel');
+  if(!panel) return;
+  chatOpen = typeof forceOpen === 'boolean' ? forceOpen : !chatOpen;
+
+  panel.classList.toggle('hidden', !chatOpen);
+  panel.classList.toggle('flex', chatOpen);
+
+  if(chatOpen) {
+    const mascot = document.getElementById('chat-mascot-container');
+    if (mascot) {
+      const rect = mascot.getBoundingClientRect();
+      positionChatPanel(rect.left, rect.top);
+    }
+    const input = document.getElementById('chat-input');
+    if(input) input.focus();
+  }
+}
+
+function appendMessage(role, text, isTyping=false){
+  const list = document.getElementById('chat-messages');
+  const isUser = role === 'user';
+
+  const wrap = document.createElement('div');
+  wrap.className = `flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`;
+  if(isTyping) wrap.id = 'chat-typing-row';
+
+  const avatar = !isUser ? `
+    <div class="w-7 h-7 shrink-0 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5 text-copper-soft"></i>
+    </div>` : '';
+
+  const bubbleClasses = isUser
+    ? 'btn-primary text-white rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[85%]'
+    : 'glass rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-mute max-w-[85%]';
+
+  wrap.innerHTML = `
+    ${avatar}
+    <div class="${bubbleClasses}">${isTyping ? '<span class="inline-flex gap-1"><span class="w-1.5 h-1.5 rounded-full bg-mute2 animate-bounce" style="animation-delay:0ms"></span><span class="w-1.5 h-1.5 rounded-full bg-mute2 animate-bounce" style="animation-delay:120ms"></span><span class="w-1.5 h-1.5 rounded-full bg-mute2 animate-bounce" style="animation-delay:240ms"></span></span>' : text}</div>
+  `;
+  list.appendChild(wrap);
+  lucide.createIcons();
+  list.scrollTop = list.scrollHeight;
+  return wrap;
+}
+
+async function sendChatMessage(message){
+  appendMessage('user', message);
+  chatHistory.push({ role: 'user', content: message });
+  const typingRow = appendMessage('assistant', '', true);
+
+  try {
+    const res = await fetch(`${CHAT_API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history: chatHistory.slice(0, -1) }),
+    });
+    if(!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    typingRow.remove();
+    appendMessage('assistant', data.reply);
+    chatHistory.push({ role: 'assistant', content: data.reply });
+  } catch (err) {
+    typingRow.remove();
+    appendMessage('assistant',
+      "Couldn't reach the backend just now. If you're running this locally, make sure the FastAPI server is up on " + CHAT_API_BASE + " (see /backend/README)."
+    );
+  }
+}
+
+let lastSeenMessageCount = 0;
+
+function initChatWidget(){
+  initMascotDraggable();
+  document.getElementById('chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const value = input.value.trim();
+    if(!value) return;
+    input.value = '';
+    sendChatMessage(value);
+  });
+
+  // Handle predefined questions chips
+  document.querySelectorAll('.quick-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      sendChatMessage(q);
+    });
+  });
+
+  // Poll for Live Chat status and Javid's replies
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${CHAT_API_BASE}/api/chat/poll`);
+      if(!res.ok) return;
+      const data = await res.json();
+      
+      const badge = document.getElementById('live-badge');
+      const subtitle = document.getElementById('chat-subtitle');
+      
+      if(data.is_live){
+        badge.classList.remove('hidden');
+        subtitle.textContent = "Live with Javid · Directly connected";
+      } else {
+        badge.classList.add('hidden');
+        subtitle.textContent = "RAG chatbot · Gemini API";
+      }
+
+      // If new messages from admin exist in live mode, render them
+      if(data.is_live && data.messages.length > lastSeenMessageCount){
+        for(let i = lastSeenMessageCount; i < data.messages.length; i++){
+          const msg = data.messages[i];
+          if(msg.role === 'Javid'){
+            appendMessage('assistant', `[Javid]: ${msg.content}`);
+          }
+        }
+        lastSeenMessageCount = data.messages.length;
+      }
+    } catch(e) {}
+  }, 2000);
+}
+
+function initDraggableGraph() {
+  const svg = document.getElementById('orchestration-svg');
+  if (!svg) return;
+  let draggedNode = null;
+  let offset = {x: 0, y: 0};
+  
+  svg.querySelectorAll('.draggable-node').forEach(node => {
+    node.addEventListener('mousedown', (e) => {
+      draggedNode = node;
+      const ctm = svg.getScreenCTM();
+      const transform = node.transform.baseVal.getItem(0).matrix;
+      offset.x = (e.clientX - transform.e * ctm.a) / ctm.a;
+      offset.y = (e.clientY - transform.f * ctm.d) / ctm.d;
+      e.preventDefault();
+    });
+  });
+  
+  window.addEventListener('mousemove', (e) => {
+    if (draggedNode) {
+      const ctm = svg.getScreenCTM();
+      let x = (e.clientX - offset.x * ctm.a) / ctm.a;
+      let y = (e.clientY - offset.y * ctm.d) / ctm.d;
+      
+      // Calculate radius and label offset to keep entire circle + label within SVG bounds
+      const circle = draggedNode.querySelector('circle');
+      const radius = circle ? parseFloat(circle.getAttribute('r')) : 22;
+      
+      const minX = radius + 6;
+      const maxX = 460 - radius - 6;
+      const minY = radius + 6;
+      const maxY = 375 - radius - 20; // padding for node label text
+      
+      if(x < minX) x = minX;
+      if(x > maxX) x = maxX;
+      if(y < minY) y = minY;
+      if(y > maxY) y = maxY;
+
+      draggedNode.setAttribute('transform', `translate(${x},${y})`);
+      updateWires();
+    }
+  });
+  
+  window.addEventListener('mouseup', () => {
+    draggedNode = null;
+  });
+
+  function getPos(id) {
+    const el = document.getElementById(id);
+    const mx = el.transform.baseVal.getItem(0).matrix;
+    return {x: mx.e, y: mx.f};
+  }
+  function setCurve(pathId, p1, p2) {
+    document.getElementById(pathId).setAttribute('d', `M ${p1.x} ${p1.y} C ${(p1.x+p2.x)/2} ${p1.y}, ${(p1.x+p2.x)/2} ${p2.y}, ${p2.x} ${p2.y}`);
+  }
+  function updateWires() {
+    const ext = getPos('node-ext');
+    const res = getPos('node-res');
+    const n8n = getPos('node-n8n');
+    const py = getPos('node-py');
+    const vec = getPos('node-vec');
+    
+    setCurve('path-ext-res', ext, res);
+    setCurve('path-res-n8n', res, n8n);
+    setCurve('path-res-py', res, py);
+    setCurve('path-ext-vec', ext, vec);
+  }
+}
+
+function initSubscribe() {
+  const form = document.getElementById('subscribe-form');
+  if(!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = form.querySelector('input[type="email"]');
+    const btn = form.querySelector('button');
+    const originalText = btn.textContent;
+    btn.textContent = 'Subscribing...';
+    try {
+      const res = await fetch(`${CHAT_API_BASE}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: input.value })
+      });
+      const data = await res.json();
+      alert(data.message);
+      if(data.status === 'success') input.value = '';
+    } catch(err) {
+      alert('Failed to subscribe. Make sure backend is running.');
+    }
+    btn.textContent = originalText;
+  });
+}
+
+function initEnquiryForm() {
+  const form = document.getElementById('enquiry-form');
+  if(!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = 'Submitting...';
+
+    const payload = {
+      name: document.getElementById('enquiry-name').value.trim(),
+      email: document.getElementById('enquiry-email').value.trim(),
+      service: document.getElementById('enquiry-service').value,
+      phone_code: document.getElementById('enquiry-phone-code').value,
+      phone_number: document.getElementById('enquiry-phone-num').value.trim(),
+      message: document.getElementById('enquiry-message').value.trim()
+    };
+
+    try {
+      const res = await fetch(`${CHAT_API_BASE}/api/enquiry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      alert(data.message);
+      if(data.status === 'success') {
+        form.reset();
+      }
+    } catch(err) {
+      alert('Failed to submit enquiry. Please ensure backend is running.');
+    }
+    btn.innerHTML = originalContent;
+  });
+}
+
+function renderMarquee(){
+  const track = document.getElementById('marquee-track');
+  if(!track || !CONFIG.marqueeTools) return;
+  const content = CONFIG.marqueeTools.map(t => `
+    <div class="flex items-center gap-2.5 text-mute font-mono text-sm whitespace-nowrap opacity-80 hover:opacity-100 transition-opacity">
+      <i data-lucide="${t.icon}" class="w-4 h-4 text-copper-soft"></i> ${t.name}
+    </div>
+  `).join('');
+  track.innerHTML = content + content + content + content;
+
+  // Slow down the CSS animation on hover using the Web Animations API
+  track.addEventListener('mouseenter', () => {
+    track.getAnimations().forEach(anim => {
+      anim.playbackRate = 0.5; // Slow down to 50% speed
+    });
+  });
+  track.addEventListener('mouseleave', () => {
+    track.getAnimations().forEach(anim => {
+      anim.playbackRate = 1; // Return to normal speed
+    });
+  });
+}
+
+function initMascotDraggable() {
+  const mascot = document.getElementById('chat-mascot-container');
+  if(!mascot) return;
+
+  let isDragging = false;
+  let startX = 0, startY = 0;
+  let initialLeft = 0, initialTop = 0;
+  let dragDistance = 0;
+
+  function startDrag(e) {
+    isDragging = true;
+    dragDistance = 0;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startX = clientX;
+    startY = clientY;
+
+    const rect = mascot.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+  }
+
+  function doDrag(e) {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    dragDistance = Math.hypot(dx, dy);
+
+    if (dragDistance > 5) {
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const rect = mascot.getBoundingClientRect();
+      const winWidth = window.innerWidth;
+      const winHeight = window.innerHeight;
+      const mWidth = rect.width || 80;
+      const mHeight = rect.height || 100;
+
+      newLeft = Math.max(10, Math.min(newLeft, winWidth - mWidth - 10));
+      newTop = Math.max(10, Math.min(newTop, winHeight - mHeight - 10));
+
+      const isRightHalf = newLeft > winWidth / 2;
+      const isBottomHalf = newTop > winHeight / 2;
+
+      mascot.style.left = isRightHalf ? 'auto' : `${newLeft}px`;
+      mascot.style.right = isRightHalf ? `${winWidth - newLeft - mWidth}px` : 'auto';
+      mascot.style.top = isBottomHalf ? 'auto' : `${newTop}px`;
+      mascot.style.bottom = isBottomHalf ? `${winHeight - newTop - mHeight}px` : 'auto';
+
+      const panel = document.getElementById('chat-panel');
+      if (panel && !panel.classList.contains('hidden')) {
+        positionChatPanel(newLeft, newTop);
+      }
+    }
+  }
+
+  function stopDrag(e) {
+    if (isDragging) {
+      isDragging = false;
+      if (dragDistance <= 5) {
+        toggleChat();
+      }
+    }
+  }
+
+  mascot.addEventListener('mousedown', startDrag);
+  mascot.addEventListener('touchstart', startDrag, { passive: true });
+  window.addEventListener('mousemove', doDrag);
+  window.addEventListener('touchmove', doDrag, { passive: true });
+  window.addEventListener('mouseup', stopDrag);
+  window.addEventListener('touchend', stopDrag);
+  window.addEventListener('resize', keepMascotInViewport);
+}
+
+function keepMascotInViewport() {
+  const mascot = document.getElementById('chat-mascot-container');
+  if (!mascot || (!mascot.style.left && !mascot.style.right)) return;
+
+  const rect = mascot.getBoundingClientRect();
+  const winWidth = window.innerWidth;
+  const winHeight = window.innerHeight;
+
+  let newLeft = rect.left;
+  let newTop = rect.top;
+
+  if (newLeft < 10) newLeft = 10;
+  if (newLeft + rect.width > winWidth - 10) newLeft = winWidth - rect.width - 10;
+  
+  if (newTop < 10) newTop = 10;
+  if (newTop + rect.height > winHeight - 10) newTop = winHeight - rect.height - 10;
+
+  const isRightHalf = newLeft > winWidth / 2;
+  const isBottomHalf = newTop > winHeight / 2;
+
+  mascot.style.left = isRightHalf ? 'auto' : `${newLeft}px`;
+  mascot.style.right = isRightHalf ? `${winWidth - newLeft - rect.width}px` : 'auto';
+  mascot.style.top = isBottomHalf ? 'auto' : `${newTop}px`;
+  mascot.style.bottom = isBottomHalf ? `${winHeight - newTop - rect.height}px` : 'auto';
+
+  const panel = document.getElementById('chat-panel');
+  if (panel && !panel.classList.contains('hidden')) {
+    const finalRect = mascot.getBoundingClientRect();
+    positionChatPanel(finalRect.left, finalRect.top);
+  }
+}
+
+function positionChatPanel(mascotLeft, mascotTop) {
+  const panel = document.getElementById('chat-panel');
+  if(!panel) return;
+  panel.style.bottom = 'auto';
+  panel.style.right = 'auto';
+
+  const panelWidth = Math.min(window.innerWidth * 0.92, 380);
+  const panelHeight = Math.min(window.innerHeight * 0.7, 560);
+
+  let panelLeft = mascotLeft - panelWidth + 70;
+  let panelTop = mascotTop - panelHeight - 15;
+
+  if (panelLeft < 10) panelLeft = 10;
+  if (panelLeft + panelWidth > window.innerWidth - 10) panelLeft = window.innerWidth - panelWidth - 10;
+
+  if (panelTop < 10) {
+    panelTop = mascotTop + 80;
+  }
+
+  panel.style.left = `${panelLeft}px`;
+  panel.style.top = `${panelTop}px`;
+}
+
+// ======================================================================
+// BOOT
+// ======================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderHeroStats();
+  renderCapabilities();
+  renderStack();
+  renderCaseStudies();
+  renderTerminalPresets();
+  renderAbout();
+  renderContact();
+  renderMarquee();
+  initNavScroll();
+  initFooterYear();
+  initChatWidget();
+  initSubscribe();
+  initEnquiryForm();
+  initDraggableGraph();
+
+  // icons must be created after dynamic content is in the DOM
+  lucide.createIcons();
+
+  // reveal init after layout settles
+  requestAnimationFrame(initReveal);
+});
+</script>
+
+</body>
+</html>
