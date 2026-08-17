@@ -17,31 +17,20 @@ export default function MascotChatbot() {
   ]);
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
-  // Position & Drag state
+  // Position & Scroll state
   const mascotRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ left: 0, top: 0 });
   const dragDistRef = useRef(0);
-  const touchStartTimeRef = useRef(0);
 
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({
     bottom: '24px',
-    right: '20px',
+    right: '24px',
     position: 'fixed'
   });
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -58,8 +47,7 @@ export default function MascotChatbot() {
       const dy = clientY - startPosRef.current.y;
       dragDistRef.current = Math.hypot(dx, dy);
 
-      // Only treat as drag if movement exceeds 15px
-      if (dragDistRef.current > 15) {
+      if (dragDistRef.current > 5) {
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
 
@@ -67,8 +55,8 @@ export default function MascotChatbot() {
         let newTop = initialPosRef.current.top + dy;
 
         // Clamp inside screen bounds
-        newLeft = Math.max(10, Math.min(newLeft, winWidth - 85));
-        newTop = Math.max(10, Math.min(newTop, winHeight - 110));
+        newLeft = Math.max(10, Math.min(newLeft, winWidth - 90));
+        newTop = Math.max(10, Math.min(newTop, winHeight - 120));
 
         setPosStyle({
           position: 'fixed',
@@ -83,9 +71,7 @@ export default function MascotChatbot() {
     const onEnd = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        const touchDuration = Date.now() - touchStartTimeRef.current;
-        // If it was a quick tap or movement was minor, toggle open/close
-        if (dragDistRef.current < 15 || touchDuration < 300) {
+        if (dragDistRef.current <= 5) {
           setIsOpen(prev => !prev);
         }
       }
@@ -93,7 +79,7 @@ export default function MascotChatbot() {
 
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchmove', onMove);
     window.addEventListener('touchend', onEnd);
 
     return () => {
@@ -107,7 +93,6 @@ export default function MascotChatbot() {
   const handleStart = (clientX: number, clientY: number) => {
     isDraggingRef.current = true;
     dragDistRef.current = 0;
-    touchStartTimeRef.current = Date.now();
     startPosRef.current = { x: clientX, y: clientY };
 
     if (mascotRef.current) {
@@ -117,50 +102,50 @@ export default function MascotChatbot() {
   };
 
   const getChatPanelStyle = (): React.CSSProperties => {
-    if (typeof window === 'undefined') return {};
+    if (typeof window === 'undefined') return { bottom: '110px', right: '24px', position: 'fixed' };
     const winWidth = window.innerWidth;
-    const isSmall = winWidth < 768;
+    const winHeight = window.innerHeight;
 
-    if (isSmall) {
-      return {
-        position: 'fixed',
-        bottom: '100px',
-        left: '12px',
-        right: '12px',
-        width: 'auto',
-        maxWidth: 'calc(100vw - 24px)',
-        height: 'min(520px, 75vh)',
-        transformOrigin: 'bottom right',
-      };
-    }
+    const panelWidth = Math.min(winWidth * 0.92, 380);
 
-    const panelWidth = Math.min(380, winWidth - 32);
+    if (mascotRef.current) {
+      const rect = mascotRef.current.getBoundingClientRect();
 
-    if (posStyle.left !== undefined) {
-      const leftNum = parseFloat(String(posStyle.left));
-      const topNum = parseFloat(String(posStyle.top));
-      const winHeight = window.innerHeight;
+      // Navbar clearance: 85px from top
+      const minTop = 85;
+      const availableSpaceAbove = rect.top - minTop - 12;
+      const spaceBelow = winHeight - rect.bottom - 20;
 
-      let panelLeft = leftNum - panelWidth + 70;
-      if (panelLeft < 16) panelLeft = 16;
-      if (panelLeft + panelWidth > winWidth - 16) panelLeft = winWidth - panelWidth - 16;
+      let top: number;
+      let panelHeight: number;
+      let transformOrigin = '85% 100%';
 
-      const spaceBelow = winHeight - (topNum + 100);
-      const spaceAbove = topNum;
-      const panelHeight = Math.min(520, Math.max(380, winHeight - 120));
-
-      let panelTop = topNum - panelHeight - 12;
-      let transformOrigin = 'bottom right';
-
-      if (spaceAbove < panelHeight && spaceBelow > spaceAbove) {
-        panelTop = topNum + 110;
-        transformOrigin = 'top right';
+      if (availableSpaceAbove >= 280) {
+        // Place panel ABOVE mascot, capped below Navbar at 85px
+        panelHeight = Math.min(520, availableSpaceAbove);
+        top = rect.top - panelHeight - 12;
+        transformOrigin = '85% 100%';
+      } else if (spaceBelow >= 280) {
+        // Place panel BELOW mascot
+        panelHeight = Math.min(520, spaceBelow);
+        top = rect.bottom + 12;
+        transformOrigin = '85% 0%';
+      } else {
+        // Fallback: place panel to left of mascot
+        panelHeight = Math.min(winHeight - minTop - 20, 520);
+        top = Math.max(minTop, Math.min(rect.top, winHeight - panelHeight - 10));
+        transformOrigin = '100% 50%';
       }
 
+      // Align right edge of panel with right edge of mascot
+      let left = rect.right - panelWidth;
+      if (left < 10) left = 10;
+      if (left + panelWidth > winWidth - 10) left = winWidth - panelWidth - 10;
+
       return {
         position: 'fixed',
-        left: `${panelLeft}px`,
-        top: `${panelTop}px`,
+        top: `${top}px`,
+        left: `${left}px`,
         width: `${panelWidth}px`,
         height: `${panelHeight}px`,
         transformOrigin,
@@ -170,10 +155,10 @@ export default function MascotChatbot() {
     return {
       position: 'fixed',
       bottom: '110px',
-      right: '20px',
+      right: '24px',
       width: `${panelWidth}px`,
       height: '520px',
-      transformOrigin: 'bottom right',
+      transformOrigin: '85% 100%',
     };
   };
 
@@ -194,7 +179,7 @@ export default function MascotChatbot() {
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-    } catch {
+    } catch (err) {
       setMessages(prev => [
         ...prev,
         {
@@ -209,39 +194,26 @@ export default function MascotChatbot() {
 
   return (
     <>
-      {/* Draggable & Tappable Mascot Container */}
+      {/* Draggable Mascot Container */}
       <div
         ref={mascotRef}
         style={posStyle}
-        className="z-50 flex flex-col items-end select-none cursor-pointer active:scale-95 transition-transform group touch-manipulation"
+        className="z-50 flex flex-col items-end select-none cursor-grab active:cursor-grabbing group touch-none"
         onMouseDown={e => handleStart(e.clientX, e.clientY)}
-        onTouchStart={e => {
-          if (e.touches.length > 0) {
-            handleStart(e.touches[0].clientX, e.touches[0].clientY);
-          }
-        }}
-        onClick={e => {
-          e.stopPropagation();
-          if (dragDistRef.current < 15) {
-            setIsOpen(prev => !prev);
-          }
-        }}
-        role="button"
-        aria-label="Ask Javi AI Mascot"
+        onTouchStart={e => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
       >
-        {/* Waving Speech Badge */}
+        {/* Waving Speech Badge (Only this badge disappears when chat window is open!) */}
         <div
-          className={`mb-1.5 bg-obsidian2/90 backdrop-blur-xl px-3 py-1 rounded-2xl rounded-br-none text-[11px] font-semibold text-ink shadow-glow flex items-center gap-1.5 border border-copper/30 pointer-events-none transition-all duration-300 ${
+          className={`mb-2 bg-white/[0.04] backdrop-blur-xl px-3.5 py-1.5 rounded-2xl rounded-br-none text-[11px] font-semibold text-ink shadow-glow flex items-center gap-1.5 border border-white/10 pointer-events-none transition-all duration-300 ${
             isOpen ? 'opacity-0 scale-75' : 'opacity-100 scale-100'
           }`}
         >
-          <Sparkles className="w-3 h-3 text-copper" />
           <span className="text-copper-soft font-mono tracking-wide">Ask Javi!</span>
         </div>
 
         {/* Mascot Robot SVG */}
         <div className="relative group-hover:scale-105 transition-transform duration-200">
-          <svg viewBox="0 0 100 120" className="w-16 h-20 sm:w-20 sm:h-24 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)] pointer-events-auto">
+          <svg viewBox="0 0 100 120" className="w-20 h-24 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)]">
             <defs>
               <linearGradient id="mascotBlue" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#4F46E5"/>
@@ -275,56 +247,50 @@ export default function MascotChatbot() {
         </div>
       </div>
 
-      {/* Holographic Expansion Panel */}
+      {/* Holographic Expansion out from inside Mascot */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.05, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.05, y: 20, transition: { duration: 0.2, ease: 'easeIn' } }}
+            initial={{ opacity: 0, scale: 0.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.05, transition: { duration: 0.2, ease: 'easeIn' } }}
             transition={{ type: 'spring', damping: 25, stiffness: 320 }}
             style={getChatPanelStyle()}
-            className="z-50 glass-strong backdrop-blur-2xl rounded-[1.75rem] border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden"
+            className="z-40 glass-strong backdrop-blur-md rounded-[1.75rem] shadow-glow flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-white/[0.02]">
               <div className="flex items-center gap-3">
-                <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-copper/20 border border-copper/40 flex items-center justify-center">
+                <div className="relative w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-copper-soft" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-obsidian2 animate-pulse"></span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-obsidian2"></span>
                 </div>
                 <div>
                   <p className="font-display font-semibold text-sm leading-tight flex items-center gap-2 text-ink">
-                    Ask Javi
+                    Ask Javid
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono">LIVE</span>
                   </p>
-                  <p className="text-[11px] text-mute2">AI Portfolio Representative</p>
+                  <p className="text-[11px] text-mute2">AI Assistant</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-mute2 hover:text-ink hover:bg-white/10 transition-all focus:outline-none"
-                aria-label="Close Chat"
-              >
+              <button onClick={() => setIsOpen(false)} className="text-mute2 hover:text-ink">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3.5 sm:py-4 space-y-3.5 text-[13.5px] leading-relaxed">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-[13.5px] leading-relaxed">
               {messages.map((m, idx) => (
                 <div key={idx} className={`flex gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   {m.role === 'assistant' && (
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-full bg-copper/20 border border-copper/40 flex items-center justify-center mt-0.5">
-                      <Sparkles className="w-3 h-3 text-copper-soft" />
+                    <div className="w-7 h-7 shrink-0 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5 text-copper-soft" />
                     </div>
                   )}
                   <div
-                    className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] text-xs sm:text-[13.5px] ${
+                    className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] ${
                       m.role === 'user'
-                        ? 'bg-copper text-white rounded-br-sm shadow-md'
-                        : 'bg-white/[0.05] border border-white/10 text-ink/90 rounded-tl-sm'
+                        ? 'bg-copper text-white rounded-br-sm'
+                        : 'bg-white/[0.04] border border-white/10 text-mute rounded-tl-sm'
                     }`}
                     dangerouslySetInnerHTML={{ __html: m.content.replace(/\n/g, '<br/>') }}
                   />
@@ -332,8 +298,8 @@ export default function MascotChatbot() {
               ))}
               {isTyping && (
                 <div className="flex gap-2.5">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-full bg-copper/20 border border-copper/40 flex items-center justify-center">
-                    <Sparkles className="w-3 h-3 text-copper-soft animate-pulse" />
+                  <div className="w-7 h-7 shrink-0 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-copper-soft animate-pulse" />
                   </div>
                   <div className="bg-white/[0.04] border border-white/10 text-mute2 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-xs italic font-mono">
                     Ask Javi is typing...
@@ -344,41 +310,40 @@ export default function MascotChatbot() {
             </div>
 
             {/* Quick Action Chips */}
-            <div className="px-3 sm:px-3.5 py-2 border-t border-white/10 flex flex-wrap gap-1.5 bg-white/[0.01]">
-              <button onClick={() => sendMessage("Schedule a consultation with Javid")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-copper/30 bg-copper/10 text-copper-soft flex items-center gap-1.5">
-                <Calendar className="w-3 h-3" /> Schedule Consultation
+            <div className="px-3.5 py-2 border-t border-white/5 flex flex-wrap gap-1.5 bg-white/[0.01]">
+              <button onClick={() => sendMessage("Schedule a meeting with Javid")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-copper-soft flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" /> Schedule Consultation
               </button>
-              <button onClick={() => sendMessage("What are his core skills and tech stack?")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
-                <Cpu className="w-3 h-3" /> Core Stack
+              <button onClick={() => sendMessage("What are his core skills and tech stack?")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5" /> Core Stack
               </button>
-              <button onClick={() => sendMessage("Tell me about his multi-agent workflows")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
-                <Bot className="w-3 h-3" /> Agent Workflows
+              <button onClick={() => sendMessage("Tell me about his multi-agent workflows")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5" /> Agent Workflows
               </button>
-              <button onClick={() => sendMessage("I want to talk to Javid directly")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
-                <MessageSquare className="w-3 h-3" /> Talk to Javid
+              <button onClick={() => sendMessage("I want to talk to Javid directly")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" /> Talk to Javid
               </button>
             </div>
 
-            {/* Chat Input Form */}
+            {/* Chat Form */}
             <form
               onSubmit={e => {
                 e.preventDefault();
                 sendMessage(inputVal);
               }}
-              className="flex items-center gap-2 px-3 sm:px-4 py-3 sm:py-3.5 border-t border-white/10 bg-white/[0.02]"
+              className="flex items-center gap-2 px-4 py-3.5 border-t border-white/10 bg-white/[0.02]"
             >
               <input
                 type="text"
                 value={inputVal}
                 onChange={e => setInputVal(e.target.value)}
-                placeholder="Ask anything about Javid..."
-                className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink placeholder:text-mute2 focus:outline-none focus:border-copper/50 transition-colors"
+                placeholder="How is Javid, actually?"
+                className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-ink placeholder:text-mute2 focus:outline-none focus:border-copper/40 transition-colors"
               />
               <button
                 type="submit"
                 disabled={!inputVal.trim() || isTyping}
-                className="btn-primary w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity disabled:opacity-50"
-                aria-label="Send message"
+                className="btn-primary w-10 h-10 rounded-xl flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 <ArrowUp className="w-4 h-4 text-white" />
               </button>
