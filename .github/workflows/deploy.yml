@@ -1,0 +1,26 @@
+name: 🚀 Auto Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔐 Connect via SSH and Update Portfolio
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/portfolio
+            git pull origin main
+            ./venv/bin/pip install -r requirements.txt
+            npm install
+            npm run build
+            pm2 restart all
+            pm2 save
+            echo "✅ Successfully deployed to https://mohamedjavid.dev!"
