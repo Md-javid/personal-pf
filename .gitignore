@@ -21,3 +21,8 @@ subscribers.db
 .DS_Store
 .vscode/
 .idea/
+node_modules
+.next/
+out/
+build/
+

@@ -338,10 +338,10 @@
           </defs>
 
           <!-- connective flow paths -->
-          <path id="path-ext-res" d="M 100 75 C 165 75, 165 185, 230 185" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
-          <path id="path-res-n8n" d="M 230 185 C 285 185, 285 295, 340 295" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
-          <path id="path-res-py" d="M 230 185 C 170 185, 170 300, 110 300" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
-          <path id="path-ext-vec" d="M 100 75 C 235 75, 235 130, 370 130" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.35" stroke-width="1.6" class="flow-path"/>
+          <path id="path-ext-res" d="M 130 80 C 185 80, 185 185, 240 185" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-res-n8n" d="M 240 185 C 295 185, 295 295, 350 295" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-res-py" d="M 240 185 C 185 185, 185 295, 130 295" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.55" stroke-width="1.6" class="flow-path"/>
+          <path id="path-ext-vec" d="M 130 80 C 242 80, 242 130, 355 130" fill="none" stroke="url(#lineGrad)" stroke-opacity="0.35" stroke-width="1.6" class="flow-path"/>
 
           <!-- data packets travelling along the paths -->
           <circle r="3.2" fill="#F0B87E" class="packet">
@@ -366,7 +366,7 @@
           </circle>
 
           <!-- Node: LLM Reasoner (center, elevated) -->
-          <g transform="translate(230,185)" id="node-res" class="draggable-node cursor-move">
+          <g transform="translate(240,185)" id="node-res" class="draggable-node cursor-move">
             <circle r="28" fill="rgba(107,118,133,0.12)" stroke="rgba(107,118,133,0.4)" stroke-width="1"/>
             <circle r="28" fill="none" stroke="#6B7685" stroke-width="1" class="pulse-ring" style="transform-origin:center;"/>
             <circle r="4" fill="#9AA3B0"/>
@@ -374,28 +374,28 @@
           </g>
 
           <!-- Node: Data Extractor -->
-          <g transform="translate(100,75)" id="node-ext" class="draggable-node cursor-move">
+          <g transform="translate(130,80)" id="node-ext" class="draggable-node cursor-move">
             <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
             <circle r="3.5" fill="#F0B87E"/>
             <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Data Extractor</text>
           </g>
 
           <!-- Node: n8n Automation Worker -->
-          <g transform="translate(340,295)" id="node-n8n" class="draggable-node cursor-move">
+          <g transform="translate(350,295)" id="node-n8n" class="draggable-node cursor-move">
             <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
             <circle r="3.5" fill="#F0B87E"/>
             <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">n8n Worker</text>
           </g>
 
           <!-- Node: Python Execution Sandbox -->
-          <g transform="translate(110,300)" id="node-py" class="draggable-node cursor-move">
+          <g transform="translate(130,295)" id="node-py" class="draggable-node cursor-move">
             <circle r="22" fill="rgba(217,138,74,0.1)" stroke="rgba(217,138,74,0.4)" stroke-width="1"/>
             <circle r="3.5" fill="#F0B87E"/>
             <text y="38" text-anchor="middle" fill="#F0B87E" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Python Sandbox</text>
           </g>
 
           <!-- Node: Vector DB -->
-          <g transform="translate(370,130)" id="node-vec" class="draggable-node cursor-move">
+          <g transform="translate(355,130)" id="node-vec" class="draggable-node cursor-move">
             <circle r="18" fill="rgba(107,118,133,0.1)" stroke="rgba(107,118,133,0.35)" stroke-width="1"/>
             <circle r="2.8" fill="#9AA3B0"/>
             <text y="34" text-anchor="middle" fill="#9AA3B0" font-family="JetBrains Mono, monospace" font-size="11" class="pointer-events-none select-none font-mono">Vector DB</text>
@@ -1611,6 +1611,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSubscribe();
   initEnquiryForm();
   initDraggableGraph();
+  initCursorSpotlight();
 
   // icons must be created after dynamic content is in the DOM
   lucide.createIcons();
@@ -1618,6 +1619,75 @@ document.addEventListener('DOMContentLoaded', () => {
   // reveal init after layout settles
   requestAnimationFrame(initReveal);
 });
+
+// ======================================================================
+// SMOOTH AMBIENT SPOTLIGHT GLOW (LINEAR / VERCEL CURSOR SPOTLIGHT)
+// ======================================================================
+function initCursorSpotlight() {
+  if ('ontouchstart' in window && window.innerWidth < 768) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.id = 'cursor-spotlight-canvas';
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:1;';
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  let width = (canvas.width = window.innerWidth);
+  let height = (canvas.height = window.innerHeight);
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const mouse = { x: width / 2, y: height / 2, targetX: width / 2, targetY: height / 2 };
+  let currentRadius = 320;
+  let targetRadius = 320;
+  let isHoveringInteractive = false;
+
+  window.addEventListener('mousemove', (e) => {
+    mouse.targetX = e.clientX;
+    mouse.targetY = e.clientY;
+
+    const target = e.target;
+    isHoveringInteractive = !!(
+      target.closest('a, button, input, textarea, select, label, [role="button"], .cursor-pointer, .glass-strong, .glass-card, #chat-mascot-container')
+    );
+    targetRadius = isHoveringInteractive ? 420 : 320;
+  });
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Buttery smooth lerp for coordinates and spotlight radius
+    mouse.x += (mouse.targetX - mouse.x) * 0.12;
+    mouse.y += (mouse.targetY - mouse.y) * 0.12;
+    currentRadius += (targetRadius - currentRadius) * 0.08;
+
+    // Create soft radial glow torch
+    const gradient = ctx.createRadialGradient(
+      mouse.x, mouse.y, 0,
+      mouse.x, mouse.y, currentRadius
+    );
+
+    if (isHoveringInteractive) {
+      gradient.addColorStop(0, 'rgba(245, 158, 11, 0.14)');  // Warm Copper Accent Glow
+      gradient.addColorStop(0.35, 'rgba(59, 130, 246, 0.07)'); // Blue transition
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else {
+      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.12)');  // Electric Blue Glow
+      gradient.addColorStop(0.4, 'rgba(99, 102, 241, 0.05)'); // Indigo transition
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    }
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+}
 </script>
 
 </body>

@@ -1,19 +1,31 @@
 [
   {
     "id": "profile",
-    "text": "Javid is an AI / ML Engineer and Full Stack Developer based in Kochi, India. He is a third-year IT student (GPA 8.6 at SNS College of Technology, Coimbatore) specializing in production-grade AI architectures, including multi-agent orchestration (LangGraph), RAG pipelines, and enterprise workflow automation. He is currently an AI & Automation Intern at Kauvery Hospitals."
+    "text": "Javid is an AI Engineer based in Kochi / Coimbatore, India. He is a third-year IT student (CGPA 8.47 at SNS College of Technology, Coimbatore) specializing in production-grade AI architectures, including multi-agent orchestration (LangGraph, CrewAI), GraphRAG pipelines, Model Context Protocol (MCP), LLM Evaluations (RAGAS, LangSmith, DeepEval), and enterprise workflow automation with cutting-edge models like Google Gemini 3.7 Flash and Gemini 3.6 Flash. He is currently an AI & Automation Intern at Kauvery Hospitals."
+  },
+  {
+    "id": "character",
+    "text": "Javid's Character & Personality: Javid is a highly dedicated, driven, humble, disciplined, and passionate AI engineer and IT student. He is known for his strong work ethic, creative problem-solving skills, curiosity, and high attention to detail. He values transparent collaboration, clean design, and building reliable, deterministic AI systems with zero fabrication."
+  },
+  {
+    "id": "skills-ai-latest",
+    "text": "Javid's AI Engineering Stack includes Multi-Agent Orchestration (LangGraph, CrewAI, ReAct Loops), Frontier Models (Google Gemini 3.7 Flash, Gemini 3.6 Flash, Claude, DeepSeek R1, Llama 3.3), Advanced Retrieval (GraphRAG, Hybrid Search, FAISS, ChromaDB, Qdrant, LlamaIndex), Integration Protocols (Model Context Protocol - MCP), LLM Evals & Observability (RAGAS, LangSmith, DeepEval), Fine-Tuning & SLMs (Unsloth, LoRA, QLoRA, vLLM, Ollama), and Structured Outputs & Guardrails (Pydantic, Instructor, NeMo Guardrails)."
+  },
+  {
+    "id": "skills-scraping-seo",
+    "text": "Javid's Web Scraping and Data Extraction capabilities include Playwright, BeautifulSoup4, Scrapy, Selenium, Headless Chromium automation, anti-bot evasion, and Pandas data cleaning for market intelligence, competitor tracking, and SEO data pipelines."
   },
   {
     "id": "contact",
-    "text": "You can reach Javid at connectjavid27@gmail.com, on LinkedIn at linkedin.com/in/javidsiast, or on GitHub at github.com/Md-javid."
+    "text": "You can reach Javid at connectjavid27@gmail.com, phone +91 9787275491, on LinkedIn at linkedin.com/in/javidsiast, or on GitHub at github.com/Md-javid."
   },
   {
     "id": "education",
-    "text": "Javid is pursuing a Bachelor of Information Technology at SNS College of Technology, Coimbatore (2024–2028). Previously, he studied at Velumanickam Higher Secondary School, Ramanathapuram."
+    "text": "Javid is pursuing a Bachelor of Information Technology at SNS College of Technology, Coimbatore (2024–2028, CGPA 8.47 / 10). Previously, he studied at Velumanickam Higher Secondary School, Ramanathapuram (87%)."
   },
   {
     "id": "experience-kauvery",
-    "text": "Javid worked as an AI & Automation Engineering Intern at Kauvery Hospitals (June 2026 - Sep 2026), where he architected production-grade multi-agent systems using LangGraph, engineered secure RAG-based pipelines for sensitive enterprise docs, and designed n8n workflow automations."
+    "text": "Javid worked as an AI & Automation Engineering Intern at Kauvery Hospitals (June 2026 - Sep 2026), where he architected production-grade multi-agent systems using LangGraph, engineered secure RAG-based pipelines (LangChain, FAISS, Gemini 3.7 API) for sensitive enterprise docs, and designed n8n workflow automations."
   },
   {
     "id": "experience-freelance",
@@ -24,47 +36,43 @@
     "text": "In Summer 2025, Javid was a MERN Stack Developer Intern at Soft Solutions in Kochi, building REST APIs and React-based frontend modules."
   },
   {
-    "id": "skills-ai",
-    "text": "Javid's AI & GenAI skills include RAG Pipelines, LLM Integration, Multi-Agent Systems, Prompt Engineering, Vector Search, and Embeddings. He frequently uses Agent Frameworks like LangChain, LangGraph, ReAct Agents, and n8n. His ML toolkit includes Scikit-learn, Random Forest, and Decision Trees."
-  },
-  {
     "id": "skills-tech",
-    "text": "Javid programs in Python, JavaScript, TypeScript, Java, and C++. His web stack includes React 19, Next.js 14, FastAPI, Django 5, Node.js/Express, and Streamlit. He uses databases like MongoDB, PostgreSQL, Supabase, and SQLite, and DevOps tools like Docker, Vercel, Git, and Google Cloud/AWS."
+    "text": "Javid programs in Python, JavaScript, TypeScript, Java, and C++. His web stack includes React 19, Next.js 14/15, FastAPI, Django 5, Node.js/Express, and Streamlit. He uses databases like PostgreSQL (pgvector), MongoDB, MySQL, Supabase, Qdrant, and SQLite, and DevOps tools like Docker, Docker Compose, AWS Bedrock, Vercel, Git, REST APIs, and JWT Auth."
   },
   {
     "id": "project-billagent-pro",
-    "text": "BillAgent Pro is an AI-powered bill management system built with React 19, TypeScript, Django 5 REST Framework, and Google Gemini 1.5 Flash Vision. It features a Multi-Agent Architecture (OCR Agent -> Validation Agent -> Learning Agent -> DB Storage) to extract vendor, date, total, tax, and line items from bill images with confidence scoring, interactive Recharts analytics, and JWT user isolation."
+    "text": "BillAgent Pro is an AI-powered bill management system (4th place at AI Agentathon) built with React 19, TypeScript, Django 5 REST Framework, SQLite, and Google Gemini 3.7 Flash Vision. It features a Multi-Agent Architecture (OCR Agent -> Validation Agent -> Learning Agent -> DB Storage) to extract vendor, date, total, tax, and line items from bill images with confidence scoring, interactive Recharts analytics, and JWT user isolation."
   },
   {
     "id": "project-medicode-ai",
-    "text": "MediCode AI is an AI-powered medical coding & EHR compliance platform supporting ICD-11 TM2, CPT, SNOMED CT, ABDM v3, and HL7 FHIR R4. Built with React 19, Vite, Django 5, and Google Gemini 2.0 Flash in Docker. Endpoints include automated medical code generation, SOAP clinical summaries, FHIR validation, and patient risk stratification."
+    "text": "MediCode AI is an AI-powered medical coding & EHR compliance platform supporting ICD-11 TM2, CPT, SNOMED CT, ABDM v3, and HL7 FHIR R4. Built with React 19, Vite, Django 5, and Google Gemini 3.7 Flash in Docker. Endpoints include automated medical code generation, SOAP clinical summaries, FHIR validation, and patient risk stratification."
   },
   {
     "id": "project-policypulse-ai",
-    "text": "PolicyPulse AI is an autonomous compliance monitoring platform built for HACKFEST 2.0 (GDG New Delhi Winner). Built with React 19, TypeScript, FastAPI, MongoDB, and Gemini 1.5 Flash. Ingests GDPR/SOC 2/ISO 27001 policy PDFs, scans databases, and runs a ReAct Agent loop (Perceive -> Reason -> Act -> Reflect) alongside 4 specialist agents (Security, Privacy, Vendor, Operations) to remediate compliance violations autonomously."
+    "text": "PolicyPulse AI is an autonomous compliance monitoring platform built for HACKFEST 2.0 (GDG New Delhi Winner). Built with React 19, TypeScript, FastAPI, MongoDB, Gemini 3.6 Flash, and Scikit-learn. Ingests GDPR/SOC 2/ISO 27001 policy PDFs, scans databases, and runs a ReAct Agent loop alongside 4 specialist agents (Security, Privacy, Vendor, Operations) to remediate compliance violations autonomously."
   },
   {
     "id": "project-aura-npu",
-    "text": "Aura-NPU is an offline neuro-inclusive cognitive assistant built for the AMD Slingshot 2026 Hackathon. Powered by Python, NiceGUI, and the AMD Ryzen AI 300 Series XDNA 2 NPU (~100ms latency via VitisAI EP INT8 ONNX). Operates 100% on-device with zero internet, supports all 22 official Indian languages (ASR IndicConformer + TTS Svara), ADHD Focus Mode (5-step chunking + Pomodoro timer), and tamper-evident SHA-256 integrity logs (RPwD Act 2016 / DPDP Act 2023 compliant)."
+    "text": "Aura-NPU is an offline neuro-inclusive cognitive assistant built for the AMD Slingshot Hackathon. Powered by Python, NiceGUI, and the AMD Ryzen AI 300 Series XDNA 2 NPU (~100ms latency via VitisAI EP INT8 ONNX). Operates 100% on-device with zero internet, supports all 22 official Indian languages (ASR IndicConformer + TTS Svara), ADHD Focus Mode (5-step chunking + Pomodoro timer), and tamper-evident SHA-256 integrity logs."
   },
   {
     "id": "project-mediflow-india",
-    "text": "Medi-Flow India is a national blood supply network coordination app built for the AI4DEV 2026 hackathon. Built with zero dependencies using vanilla HTML5, CSS3, JavaScript, and Leaflet.js. Manages 46 hospitals across 12 Indian cities with a 4-step AI Agent Pipeline (alpha Watchman -> beta Bridge -> gamma Mobilizer -> delta Dispatch) to track inventory, find surplus hospitals, alert 84-day eligible donors, and route ambulances with Haversine distance."
+    "text": "Medi-Flow India is a national blood supply network coordination app built for the AI4DEV Hackathon. Built with zero dependencies using vanilla HTML5, CSS3, JavaScript, and Leaflet.js. Manages 46 hospitals across 12 Indian cities with a 4-step AI Agent Pipeline (Watchman -> Bridge -> Mobilizer -> Dispatch) to track inventory, find surplus hospitals, alert 84-day eligible donors, and route ambulances."
   },
   {
     "id": "project-marketmind-ai",
-    "text": "MarketMind AI is a multi-agent competitive intelligence platform built for the SNS GenAI Sprint. Built with Next.js 14, React 18, FastAPI, LangGraph 0.2, and Groq (llama-3.3-70b). Features a sequential 4-agent pipeline (Scout Agent web scraper -> Analyst Agent SWOT -> Strategist Agent -> SMM Agent) to generate business strategies, 24-hr social media plans, and automated Twilio WhatsApp alerts."
+    "text": "MarketMind AI is a multi-agent competitive intelligence platform built for the SNS GenAI Sprint. Built with Next.js 14, React 18, FastAPI, LangGraph 0.2, and Groq Llama 3.3. Features an autonomous Scout Agent with Playwright web scraping -> Analyst Agent SWOT -> Strategist Agent -> SMM Agent to generate business strategies, 24-hr social media plans, and automated Twilio WhatsApp alerts."
+  },
+  {
+    "id": "project-aarogya",
+    "text": "AAROGYA is an AI Fitness & Wellness Coach (MERN + AI) built with React 19, Node.js/Express, MongoDB, Python/Flask, LangChain, LangGraph, and Gemini 3.7 API. Generates personalized diet and workout plans with Scikit-learn activity prediction."
   },
   {
     "id": "hackathons",
-    "text": "Javid is an active hackathon competitor: Top Project winner at HACKFEST 2.0 (GDG New Delhi) for PolicyPulse AI, built Aura-NPU for AMD Slingshot 2026, created Medi-Flow India for AI4DEV 2026, submitted MarketMind AI for SNS GenAI Sprint, and won 4th place at AI Agentathon with BillAgent Pro."
+    "text": "Javid is an active hackathon competitor: Top Project winner at HACKFEST 2.0 (GDG New Delhi) for PolicyPulse AI, 4th place at AI Agentathon with BillAgent Pro, built Aura-NPU for AMD Slingshot, created Medi-Flow India for AI4DEV, and submitted MarketMind AI for SNS GenAI Sprint."
   },
   {
     "id": "interests",
     "text": "Outside of engineering, Javid is into photography, video editing, color grading, and visual/poster design. He also enjoys building creative, well-designed interfaces — form matters to him as much as function."
-  },
-  {
-    "id": "principles",
-    "text": "Javid cares a lot about data integrity in his AI systems — a recurring theme across his projects is a strict no-fabrication rule: if something can't be verified, it goes in an 'unverified' bucket instead of being discarded or guessed at."
   }
 ]

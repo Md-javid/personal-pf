@@ -1,49 +1,85 @@
-# Javid — Portfolio + "Ask Javid" RAG Chatbot
+# 🚀 Mohamed Javid — AI Engineer Portfolio & RAG Architecture
 
-Two pieces:
+> Production-grade Next.js 16 + React 19 + Tailwind CSS portfolio featuring an interactive LangGraph / MCP state machine, animated canvas fluid dynamics, and a local FastAPI SQLite RAG chatbot ("Ask Javid").
+
+---
+
+## ⚡ Tech Stack
+
+* **Frontend:** Next.js 16 (App Router + Turbopack), React 19, Tailwind CSS, Framer Motion, Lucide Icons
+* **Backend:** Python 3.11, FastAPI, Uvicorn, SQLite, Scikit-Learn TF-IDF RAG
+* **AI & LLM:** Google Gemini 2.5 Flash / Flash Lite, LangGraph State Machine Patterns, Model Context Protocol (MCP)
+* **DevOps / Production:** Nginx Reverse Proxy, PM2 Process Manager, AWS EC2 / Vercel Ready
+
+---
+
+## 🏗️ Architecture Overview
 
 ```
-index.html        — the portfolio site (open directly, or host anywhere static)
-app.py            — FastAPI RAG chatbot, calls the Gemini API
+                        [ User / Client ]
+                               │
+               (HTTPS - Let's Encrypt / Vercel CDN)
+                               ▼
+                    [ Nginx Reverse Proxy ]
+                   ┌───────────┴───────────┐
+                   ▼                       ▼
+           [ Next.js 16 App ]      [ FastAPI Backend ]
+               (Port 3000)             (Port 8787)
+                   │                       │
+           Interactive UI &        TF-IDF Retrieval &
+           LangGraph Simulation    Gemini RAG Grounding
 ```
 
-## 1. Run the backend
+---
 
+## 🛠️ Local Development Setup
+
+### 1. Backend Setup (FastAPI)
 ```bash
-python -m venv venv && source venv/bin/activate   # optional but recommended
+# Setup Python virtual environment
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux / macOS:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Create .env from template
 cp .env.example .env
+
+# Run FastAPI backend
+python -m uvicorn app:app --port 8787 --reload
 ```
 
-Open `.env` and paste in a free Gemini API key from
-https://aistudio.google.com/apikey — takes about a minute.
-
+### 2. Frontend Setup (Next.js)
 ```bash
-uvicorn app:app --reload --port 8787
+# Install node dependencies
+npm install
+
+# Run Next.js development server
+npm run dev -- -p 3000
 ```
 
-Check it's alive: open http://localhost:8787/api/health — you should see
-`{"status": "ok", "chunks_indexed": 13}`.
+Open [http://localhost:3000](http://localhost:3000) to view the portfolio.
 
-## 2. Open the frontend
+---
 
-Just open `index.html` in a browser — no build step. The chat
-widget (bottom-right bubble) is already pointed at `http://localhost:8787`
-via the `CHAT_API_BASE` constant near the bottom of the `<script>` tag.
+## ☁️ AWS EC2 Free Tier Deployment
 
-## 3. How the chatbot actually works
+This project includes pre-configured deployment templates:
+* **`ecosystem.config.js`**: PM2 process manager for 24/7 background running & auto-restarts on reboot.
+* **`nginx.conf.example`**: Nginx configuration routing `/` to Next.js and `/api/` to FastAPI with gzip compression and SSL pass-through.
 
-- `knowledge_base.json` holds short factual chunks about Javid —
-  his role, stack, projects, hackathons, working habits.
-- On startup, those chunks are vectorized with TF-IDF (`scikit-learn`).
-  This is genuine retrieval, not a hardcoded lookup table — no vector
-  database needed at this scale.
-- Every question is embedded the same way and compared by cosine
-  similarity; the top 4 matching chunks get stuffed into the Gemini
-  prompt as grounding context, alongside a persona system instruction.
+### Start with PM2:
+```bash
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
 
-## 4. Deploying for real
+---
 
-- **Backend**: any Python host works (Render, Railway, Fly.io, a small VPS). Set `GEMINI_API_KEY` as an environment variable there instead of a `.env` file.
-- **Frontend**: any static host (Vercel, Netlify, GitHub Pages). Update `CHAT_API_BASE` in `index.html` to your deployed backend URL before publishing.
-
+## 📜 License
+MIT License © 2026 Mohamed Javid.
