@@ -5,6 +5,13 @@ export const metadata: Metadata = {
   title: 'Javid — AI Engineer',
   description: 'Portfolio of Javid — AI Engineer specializing in production multi-agent systems, LangGraph, and autonomous workflows.',
   keywords: ['AI Engineer', 'AI / ML Engineer', 'LangGraph', 'Multi-Agent Systems', 'GraphRAG', 'Mohamed Javid', 'Javid'],
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' }
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
