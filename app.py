@@ -389,24 +389,63 @@ def send_meeting_email(date: str, time: str, email: str, description: str):
         print(f"Error sending meeting email: {e}")
 
 # ---------------------------------------------------------------------------
-# RAG index — built once at startup
+# Pure Python Lightweight RAG index — built once at startup (Zero external C dependencies)
 # ---------------------------------------------------------------------------
+import math
+from collections import Counter
+
 KB_PATH = Path(__file__).parent / "knowledge_base.json"
 with open(KB_PATH, "r", encoding="utf-8") as f:
     KNOWLEDGE_BASE = json.load(f)
 
 CHUNK_TEXTS = [c["text"] for c in KNOWLEDGE_BASE]
-VECTORIZER = TfidfVectorizer(stop_words="english")
-CHUNK_MATRIX = VECTORIZER.fit_transform(CHUNK_TEXTS)
 
+def tokenize(text: str) -> List[str]:
+    return re.findall(r"\b[a-zA-Z0-9_]{2,}\b", text.lower())
+
+N_DOCS = len(CHUNK_TEXTS)
+DOC_TOKENS = [tokenize(doc) for doc in CHUNK_TEXTS]
+DF = Counter()
+for tokens in DOC_TOKENS:
+    DF.update(set(tokens))
+
+IDF = {term: math.log((N_DOCS + 1) / (df + 1)) + 1.0 for term, df in DF.items()}
+
+def compute_tfidf_vector(tokens: List[str]) -> Dict[str, float]:
+    tf = Counter(tokens)
+    total = len(tokens) or 1
+    vec = {}
+    norm_sq = 0.0
+    for term, count in tf.items():
+        if term in IDF:
+            val = (count / total) * IDF[term]
+            vec[term] = val
+            norm_sq += val * val
+    norm = math.sqrt(norm_sq) or 1.0
+    return {term: val / norm for term, val in vec.items()}
+
+DOC_VECTORS = [compute_tfidf_vector(tokens) for tokens in DOC_TOKENS]
+
+def cosine_sim(vec_a: Dict[str, float], vec_b: Dict[str, float]) -> float:
+    if len(vec_a) > len(vec_b):
+        vec_a, vec_b = vec_b, vec_a
+    return sum(val * vec_b.get(term, 0.0) for term, val in vec_a.items())
 
 def retrieve(query: str, k: int = TOP_K) -> List[str]:
-    """Return the k most relevant knowledge chunks for a query."""
+    """Return the k most relevant knowledge chunks for a query using pure-Python TF-IDF."""
     clean_query = sanitize_user_input(query)
-    query_vec = VECTORIZER.transform([clean_query])
-    scores = cosine_similarity(query_vec, CHUNK_MATRIX).flatten()
-    ranked = scores.argsort()[::-1][:k]
-    return [CHUNK_TEXTS[i] for i in ranked if scores[i] > 0.01] or CHUNK_TEXTS[:k]
+    q_vec = compute_tfidf_vector(tokenize(clean_query))
+    if not q_vec:
+        return CHUNK_TEXTS[:k]
+    
+    scored = []
+    for idx, d_vec in enumerate(DOC_VECTORS):
+        score = cosine_sim(q_vec, d_vec)
+        scored.append((score, idx))
+    
+    scored.sort(key=lambda x: x[0], reverse=True)
+    ranked = [CHUNK_TEXTS[idx] for score, idx in scored[:k] if score > 0.001]
+    return ranked or CHUNK_TEXTS[:k]
 
 
 # ---------------------------------------------------------------------------
