@@ -89,26 +89,26 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="py-24 px-6 lg:px-10 relative">
-      <div className="max-w-4xl mx-auto space-y-12 text-center">
+    <section id="contact" className="py-20 sm:py-24 px-4 sm:px-6 lg:px-10 relative">
+      <div className="max-w-4xl mx-auto space-y-10 sm:space-y-12 text-center">
         
         <ScrollReveal className="space-y-4">
           <span className="eyebrow">Get In Touch</span>
-          <h2 className="font-display font-semibold text-3xl sm:text-5xl text-ink tracking-tight">
+          <h2 className="font-display font-semibold text-2xl sm:text-5xl text-ink tracking-tight">
             Have a project or AI system worth building?
           </h2>
-          <p className="text-mute max-w-lg mx-auto text-base">
+          <p className="text-mute max-w-lg mx-auto text-sm sm:text-base px-2">
             Open to AI engineering roles, high-impact freelance builds, and research collaborations worldwide.
           </p>
         </ScrollReveal>
 
         <ScrollReveal direction="up" delay={0.2} duration={0.8}>
-          <form onSubmit={handleSubmit} suppressHydrationWarning className="glass-strong rounded-[2.5rem] p-8 sm:p-12 space-y-7 text-left shadow-glow border border-white/10 relative overflow-hidden">
+          <form onSubmit={handleSubmit} suppressHydrationWarning className="glass-strong rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-10 md:p-12 space-y-6 sm:space-y-7 text-left shadow-glow border border-white/10 relative overflow-hidden">
             
             {/* Ambient inner subtle glow */}
             <div className="absolute top-0 right-1/4 w-72 h-72 bg-copper/5 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 relative z-10">
               <div className="space-y-2">
                 <label className="chip text-mute uppercase text-xs font-mono">Your Name *</label>
                 <input
@@ -135,7 +135,7 @@ export default function Contact() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 relative z-10">
               
               {/* Project Focus with Custom Select + Custom Write-In Option */}
               <div className="space-y-2">
@@ -189,13 +189,13 @@ export default function Contact() {
               {/* Phone Number with Polished Country Selector */}
               <div className="space-y-2">
                 <label className="chip text-mute uppercase text-xs font-mono">Phone Number <span className="text-mute2">(Optional)</span></label>
-                <div className="flex gap-2">
-                  <div className="relative w-36 shrink-0">
+                <div className="flex gap-2 min-w-0">
+                  <div className="relative w-28 sm:w-36 shrink-0">
                     <select
                       value={formState.phone_code}
                       suppressHydrationWarning
                       onChange={e => setFormState({ ...formState, phone_code: e.target.value })}
-                      className="w-full appearance-none px-3.5 py-3.5 pr-8 rounded-2xl bg-[#0B0F19] border border-white/15 text-ink text-xs sm:text-sm focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20 transition-all cursor-pointer truncate shadow-inner"
+                      className="w-full appearance-none px-2.5 sm:px-3.5 py-3.5 pr-7 sm:pr-8 rounded-2xl bg-[#0B0F19] border border-white/15 text-ink text-xs sm:text-sm focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20 transition-all cursor-pointer truncate shadow-inner"
                     >
                       {COUNTRY_CODES.map(c => (
                         <option key={`${c.code}-${c.dial_code}`} value={c.dial_code} className="bg-[#0B0F19] text-ink">
@@ -203,7 +203,7 @@ export default function Contact() {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-copper-soft pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-75" />
+                    <ChevronDown className="w-3.5 h-3.5 text-copper-soft pointer-events-none absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 opacity-75" />
                   </div>
                   <input
                     type="tel"
@@ -211,7 +211,7 @@ export default function Contact() {
                     value={formState.phone_number}
                     onChange={e => setFormState({ ...formState, phone_number: e.target.value })}
                     placeholder="9876543210"
-                    className="flex-1 px-4 py-3.5 rounded-2xl glass text-ink text-sm focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20 transition-all placeholder:text-mute2"
+                    className="min-w-0 flex-1 px-3.5 sm:px-4 py-3.5 rounded-2xl glass text-ink text-xs sm:text-sm focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20 transition-all placeholder:text-mute2"
                   />
                 </div>
               </div>
