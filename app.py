@@ -444,6 +444,98 @@ def send_enquiry_email(name: str, email: str, service: str, phone: str, message:
     except Exception as e:
         print(f"Error sending enquiry email via SMTP: {e}")
 
+def create_google_calendar_event_with_meet(name: str, email: str, date_str: str, time_str: str, description: str) -> Optional[str]:
+    """Create event on Google Calendar using OAuth2 credentials and return real Google Meet link."""
+    token_path = Path(__file__).parent / "token.json"
+    creds = None
+    
+    if token_path.exists():
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            
+            creds = Credentials.from_authorized_user_file(str(token_path), scopes=[
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar'
+            ])
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                with open(token_path, 'w') as f:
+                    f.write(creds.to_json())
+        except Exception as e:
+            try:
+                print(f"Error loading Google Calendar credentials: {e}")
+            except Exception:
+                pass
+            creds = None
+
+    if not creds:
+        return None
+
+    try:
+        from googleapiclient.discovery import build
+        import dateutil.parser
+
+        service = build('calendar', 'v3', credentials=creds)
+        
+        now = datetime.now()
+        start_dt = None
+        try:
+            start_dt = dateutil.parser.parse(f"{date_str} {time_str}", fuzzy=True)
+        except Exception:
+            start_dt = now + timedelta(days=1)
+            start_dt = start_dt.replace(hour=19, minute=0, second=0, microsecond=0)
+
+        end_dt = start_dt + timedelta(hours=1)
+        start_iso = start_dt.strftime("%Y-%m-%dT%H:%M:%S+05:30")
+        end_iso = end_dt.strftime("%Y-%m-%dT%H:%M:%S+05:30")
+
+        event_body = {
+            'summary': f'Consultation: Mohamed Javid & {name} - {description}',
+            'description': f'Consultation Discussion with Mohamed Javid\nClient: {name} ({email})\nTopic: {description}\nHost: Mohamed Javid ({JAVID_EMAIL})',
+            'start': {'dateTime': start_iso, 'timeZone': 'Asia/Kolkata'},
+            'end': {'dateTime': end_iso, 'timeZone': 'Asia/Kolkata'},
+            'attendees': [
+                {'email': JAVID_EMAIL, 'displayName': 'Mohamed Javid', 'responseStatus': 'accepted'},
+                {'email': email, 'displayName': name}
+            ],
+            'conferenceData': {
+                'createRequest': {
+                    'requestId': f'meet-{uuid.uuid4().hex[:10]}',
+                    'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+                }
+            },
+            'reminders': {
+                'useDefault': False,
+                'overrides': [
+                    {'method': 'email', 'minutes': 24 * 60},
+                    {'method': 'popup', 'minutes': 15},
+                ],
+            },
+        }
+
+        event = service.events().insert(
+            calendarId='primary',
+            body=event_body,
+            conferenceDataVersion=1,
+            sendUpdates='all'
+        ).execute()
+
+        meet_link = event.get('hangoutLink')
+        if not meet_link and 'conferenceData' in event:
+            for ep in event['conferenceData'].get('entryPoints', []):
+                if ep.get('entryPointType') == 'video':
+                    meet_link = ep.get('uri')
+                    break
+
+        return meet_link
+    except Exception as e:
+        try:
+            print(f"Error creating Google Calendar event via API: {e}")
+        except Exception:
+            pass
+        return None
+
 def generate_ics_invite(name: str, email: str, date_str: str, time_str: str, description: str, meet_url: str = "https://meet.google.com/new") -> str:
     """Generate standard RFC 5545 iCalendar data for automatic calendar syncing in Gmail/Outlook."""
     now_utc = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -480,7 +572,7 @@ def generate_ics_invite(name: str, email: str, date_str: str, time_str: str, des
     )
     return ics
 
-def send_meeting_email(date: str, time_str: str, email: str, description: str, name: str = "Client"):
+def send_meeting_email(date: str, time_str: str, email: str, description: str, name: str = "Client", meet_url: str = "https://meet.google.com/new"):
     """Send meeting invitation & calendar event (.ics) to both Javid and the client."""
     clean_purpose = description.replace("+", " ")
     clean_name = name.replace("+", " ")
@@ -491,13 +583,12 @@ def send_meeting_email(date: str, time_str: str, email: str, description: str, n
     gcal_title = urllib.parse.quote(f"Consultation with Mohamed Javid - {clean_purpose}")
     gcal_details = urllib.parse.quote(f"Meeting with {clean_name} ({clean_email})\nTopic: {clean_purpose}\nDate: {clean_date} at {clean_time} (IST)")
     gcal_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={gcal_title}&details={gcal_details}&location=Google+Meet"
-    meet_url = "https://meet.google.com/new"
 
     # Generate iCalendar payload
     ics_data = generate_ics_invite(clean_name, clean_email, clean_date, clean_time, clean_purpose, meet_url)
 
     # WhatsApp Alert to Javid (clean formatting without silly emojis)
-    send_whatsapp_notification(f"[Consultation Booked]\nName: {clean_name}\nEmail: {clean_email}\nDate: {clean_date}\nTime: {clean_time}\nTopic: {clean_purpose}")
+    send_whatsapp_notification(f"[Consultation Booked]\nName: {clean_name}\nEmail: {clean_email}\nDate: {clean_date}\nTime: {clean_time}\nTopic: {clean_purpose}\nMeet: {meet_url}")
 
     if not SMTP_USER or not SMTP_PASSWORD:
         try:
@@ -982,20 +1073,35 @@ def process_booking_if_present(raw_text: str) -> str:
         except Exception:
             pass
 
-    # Send email to Javid & Client with iCalendar attachment
-    send_meeting_email(date=date, time_str=time_str, email=email, description=purpose, name=name)
-
-    # Reconstruct a 100% valid, URL-encoded Google Calendar link
+    # Clean variables
     clean_purpose = purpose.replace("+", " ")
     clean_name = name.replace("+", " ")
     clean_email = email.replace("+", " ")
     clean_date = date.replace("+", " ")
     clean_time = time_str.replace("+", " ")
 
+    # Attempt to create Google Calendar event + unique Google Meet link
+    live_meet_url = create_google_calendar_event_with_meet(
+        name=clean_name,
+        email=clean_email,
+        date_str=clean_date,
+        time_str=clean_time,
+        description=clean_purpose
+    )
+    final_meet_url = live_meet_url or "https://meet.google.com/new"
+
+    # Send email to Javid & Client with iCalendar attachment
+    send_meeting_email(date=date, time_str=time_str, email=email, description=purpose, name=name, meet_url=final_meet_url)
+
+    # Reconstruct a 100% valid, URL-encoded Google Calendar link
     gcal_title = urllib.parse.quote(f"Consultation with Mohamed Javid - {clean_purpose}")
-    gcal_details = urllib.parse.quote(f"Meeting with {clean_name} ({clean_email})\nTopic: {clean_purpose}\nDate: {clean_date} at {clean_time} (IST)")
-    gcal_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={gcal_title}&details={gcal_details}&location=Google+Meet"
-    button_markdown = f"[Add to Google Calendar & Join Meet]({gcal_url})"
+    gcal_details = urllib.parse.quote(f"Meeting with {clean_name} ({clean_email})\nTopic: {clean_purpose}\nDate: {clean_date} at {clean_time} (IST)\nMeeting Link: {final_meet_url}")
+    gcal_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={gcal_title}&details={gcal_details}&location={urllib.parse.quote(final_meet_url)}"
+    
+    if live_meet_url:
+        button_markdown = f"[Join Google Meet]({live_meet_url})\n\n[Add to Google Calendar]({gcal_url})"
+    else:
+        button_markdown = f"[Add to Google Calendar & Join Meet]({gcal_url})"
 
     # Remove the internal tag from user-facing output
     clean_text = BOOKING_DATA_RE.sub("", raw_text).strip()

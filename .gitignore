@@ -1,6 +1,11 @@
 # Environment & Secrets
 .env
 *.env
+client_secret*.json
+credentials*.json
+token.json
+*.token
+*.pem
 
 # Python & Virtual Environments
 venv/
