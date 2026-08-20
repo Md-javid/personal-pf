@@ -37,6 +37,34 @@ export default function Navbar() {
     { name: 'About', href: '#about', icon: User },
   ];
 
+  const scrollToTop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    setMobileMenuOpen(false);
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const targetId = href.substring(1);
+      if (targetId === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const elem = document.getElementById(targetId);
+        if (elem) {
+          const navOffset = 80;
+          const elemPos = elem.getBoundingClientRect().top + window.scrollY - navOffset;
+          window.scrollTo({ top: elemPos, behavior: 'smooth' });
+        }
+      }
+      window.history.replaceState(null, '', href);
+    }
+  };
+
   return (
     <header id="site-nav" className="fixed top-0 inset-x-0 z-50 transition-all duration-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
@@ -48,23 +76,24 @@ export default function Navbar() {
           style={scrolled ? { boxShadow: 'rgba(0, 0, 0, 0.6) 0px 10px 40px -20px' } : {}}
         >
           {/* Brand Logo */}
-          <Link
+          <a
             href="#top"
-            onClick={() => setMobileMenuOpen(false)}
-            className="font-display font-semibold text-lg tracking-tight flex items-center gap-2"
+            onClick={scrollToTop}
+            className="font-display font-semibold text-lg tracking-tight flex items-center gap-2 cursor-pointer select-none"
           >
             <span className="w-2.5 h-2.5 rounded-full bg-copper shadow-[0_0_12px_2px_rgba(217,138,74,0.8)] animate-pulse" />
             <span id="brand-name" className="text-ink font-semibold">Javid</span>
             <span className="text-copper-soft font-mono text-sm font-normal">.dev</span>
-          </Link>
+          </a>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm text-mute font-medium">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
-                className={`nav-link transition-colors ${
+                onClick={(e) => handleNavClick(e, link.href)}
+                className={`nav-link transition-colors cursor-pointer ${
                   link.isAgent
                     ? 'hover:text-copper text-copper-soft flex items-center gap-1.5 font-semibold'
                     : 'hover:text-ink'
@@ -72,20 +101,20 @@ export default function Navbar() {
               >
                 {link.isAgent && <span className="w-1.5 h-1.5 rounded-full bg-copper animate-ping" />}
                 <span>{link.name}</span>
-              </Link>
+              </a>
             ))}
           </nav>
 
           {/* Right Action + Mobile Hamburger Button */}
           <div className="flex items-center gap-3">
-            <Link
+            <a
               href="#contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="hidden sm:inline-flex btn-primary text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity shadow-glow items-center gap-1.5"
+              onClick={(e) => handleNavClick(e, '#contact')}
+              className="hidden sm:inline-flex btn-primary text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity shadow-glow items-center gap-1.5 cursor-pointer"
             >
               <span>Let's Talk</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            </a>
 
             {/* Mobile Hamburger Toggle Button */}
             <button
@@ -119,11 +148,11 @@ export default function Navbar() {
                 {navLinks.map((link) => {
                   const Icon = link.icon;
                   return (
-                    <Link
+                    <a
                       key={link.name}
                       href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all ${
+                      onClick={(e) => handleNavClick(e, link.href)}
+                      className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                         link.isAgent
                           ? 'bg-copper/10 border border-copper/30 text-copper-soft font-semibold'
                           : 'text-ink/90 hover:text-white hover:bg-white/[0.06]'
@@ -142,20 +171,20 @@ export default function Navbar() {
                       ) : (
                         <ArrowRight className="w-3.5 h-3.5 text-mute/50" />
                       )}
-                    </Link>
+                    </a>
                   );
                 })}
 
                 {/* Mobile CTA */}
                 <div className="pt-2 mt-1 border-t border-white/10">
-                  <Link
+                  <a
                     href="#contact"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 w-full btn-primary text-sm font-semibold py-3 rounded-xl text-white shadow-glow"
+                    onClick={(e) => handleNavClick(e, '#contact')}
+                    className="flex items-center justify-center gap-2 w-full btn-primary text-sm font-semibold py-3 rounded-xl text-white shadow-glow cursor-pointer"
                   >
                     <Mail className="w-4 h-4" />
                     <span>Get in Touch (Let's Talk)</span>
-                  </Link>
+                  </a>
                 </div>
               </div>
             </motion.div>

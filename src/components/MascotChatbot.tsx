@@ -18,14 +18,13 @@ export default function MascotChatbot() {
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Position & Drag state
+  // Drag state (Desktop only)
   const mascotRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ left: 0, top: 0 });
   const dragDistRef = useRef(0);
-  const touchStartTimeRef = useRef(0);
 
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({
     bottom: '24px',
@@ -37,28 +36,24 @@ export default function MascotChatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Global window listeners for drag & drop and tap detection
+  // Desktop Mouse Drag Listener (Disabled on mobile to ensure zero touch lag)
   useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
+    const onMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-      const dx = clientX - startPosRef.current.x;
-      const dy = clientY - startPosRef.current.y;
+      const dx = e.clientX - startPosRef.current.x;
+      const dy = e.clientY - startPosRef.current.y;
       dragDistRef.current = Math.hypot(dx, dy);
 
-      // Only move if user is intentionally dragging (> 15px)
-      if (dragDistRef.current > 15) {
+      if (dragDistRef.current > 6) {
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
 
         let newLeft = initialPosRef.current.left + dx;
         let newTop = initialPosRef.current.top + dy;
 
-        // Clamp inside screen bounds
-        newLeft = Math.max(10, Math.min(newLeft, winWidth - 90));
-        newTop = Math.max(10, Math.min(newTop, winHeight - 120));
+        // Clamp inside safe viewport bounds
+        newLeft = Math.max(16, Math.min(newLeft, winWidth - 90));
+        newTop = Math.max(90, Math.min(newTop, winHeight - 110));
 
         setPosStyle({
           position: 'fixed',
@@ -70,35 +65,29 @@ export default function MascotChatbot() {
       }
     };
 
-    const onEnd = () => {
+    const onMouseUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        const elapsed = Date.now() - touchStartTimeRef.current;
-        // On mobile/PC: If movement was under 18px OR tap duration was fast (< 350ms), toggle open
-        if (dragDistRef.current < 18 || elapsed < 350) {
+        if (dragDistRef.current <= 6) {
           setIsOpen(prev => !prev);
         }
       }
     };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend', onEnd);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
 
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onEnd);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
   }, []);
 
-  const handleStart = (clientX: number, clientY: number) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click
     isDraggingRef.current = true;
     dragDistRef.current = 0;
-    touchStartTimeRef.current = Date.now();
-    startPosRef.current = { x: clientX, y: clientY };
+    startPosRef.current = { x: e.clientX, y: e.clientY };
 
     if (mascotRef.current) {
       const rect = mascotRef.current.getBoundingClientRect();
@@ -107,20 +96,21 @@ export default function MascotChatbot() {
   };
 
   const getChatPanelStyle = (): React.CSSProperties => {
-    if (typeof window === 'undefined') return { bottom: '110px', right: '20px', position: 'fixed' };
+    if (typeof window === 'undefined') return { bottom: '100px', right: '20px', position: 'fixed' };
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
+    const NAV_HEIGHT = 85; // Never overlap the navbar
 
-    // Mobile: Center cleanly across screen width
+    // Mobile: Full width card cleanly pinned above bottom
     if (winWidth < 768) {
       return {
         position: 'fixed',
-        bottom: '100px',
+        bottom: '96px',
         left: '12px',
         right: '12px',
         width: 'auto',
         maxWidth: 'calc(100vw - 24px)',
-        height: 'min(520px, 75vh)',
+        height: 'min(500px, 75vh)',
         transformOrigin: 'bottom right',
       };
     }
@@ -137,15 +127,19 @@ export default function MascotChatbot() {
       if (panelLeft + panelWidth > winWidth - 16) panelLeft = winWidth - panelWidth - 16;
 
       const spaceBelow = winHeight - (topNum + 100);
-      const spaceAbove = topNum;
-      const panelHeight = Math.min(520, Math.max(380, winHeight - 120));
+      const spaceAbove = topNum - NAV_HEIGHT;
+      const panelHeight = Math.min(500, Math.max(340, winHeight - NAV_HEIGHT - 130));
 
       let panelTop = topNum - panelHeight - 12;
       let transformOrigin = 'bottom right';
 
+      // If mascot is near top, place panel below mascot
       if (spaceAbove < panelHeight && spaceBelow > spaceAbove) {
-        panelTop = topNum + 110;
+        panelTop = Math.min(topNum + 100, winHeight - panelHeight - 16);
         transformOrigin = 'top right';
+      } else {
+        // Enforce NAV_HEIGHT clamp so it NEVER exceeds the top bar
+        panelTop = Math.max(NAV_HEIGHT + 10, panelTop);
       }
 
       return {
@@ -158,12 +152,14 @@ export default function MascotChatbot() {
       };
     }
 
+    // Default Desktop Position
+    const maxAvailableHeight = Math.min(500, winHeight - NAV_HEIGHT - 130);
     return {
       position: 'fixed',
-      bottom: '110px',
+      bottom: '100px',
       right: '20px',
       width: `${panelWidth}px`,
-      height: '520px',
+      height: `${maxAvailableHeight}px`,
       transformOrigin: 'bottom right',
     };
   };
@@ -200,17 +196,16 @@ export default function MascotChatbot() {
 
   return (
     <>
-      {/* Draggable & Tappable Mascot Container */}
+      {/* Mascot Floating Trigger Button */}
       <div
         ref={mascotRef}
         style={posStyle}
-        className="z-50 flex flex-col items-end select-none cursor-pointer active:scale-95 transition-transform group touch-manipulation"
-        onMouseDown={e => {
-          if (e.button === 0) handleStart(e.clientX, e.clientY);
-        }}
-        onTouchStart={e => {
-          if (e.touches.length > 0) {
-            handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        className="z-50 flex flex-col items-end select-none cursor-pointer group active:scale-95 transition-transform"
+        onMouseDown={handleMouseDown}
+        onClick={(e) => {
+          // On mobile or direct clicks, toggle immediately
+          if (dragDistRef.current <= 6) {
+            setIsOpen(prev => !prev);
           }
         }}
         role="button"
