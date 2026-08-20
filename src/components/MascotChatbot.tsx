@@ -169,6 +169,20 @@ export default function MascotChatbot() {
     };
   };
 
+  const formatMessageContent = (content: string) => {
+    if (!content) return '';
+    // Replace markdown links [text](url) with styled HTML links
+    let formatted = content.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-copper-soft underline font-semibold hover:text-copper transition-colors">$1 ↗</a>'
+    );
+    // Replace bold **text**
+    formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // Replace newlines
+    formatted = formatted.replace(/\n/g, '<br/>');
+    return formatted;
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     const userMsg: ChatMessage = { role: 'user', content: text };
@@ -187,11 +201,17 @@ export default function MascotChatbot() {
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch {
+      const wittyFallbacks = [
+        "Javi's neural synapses are briefly calibrating new agent graphs! ⚡ Back online in a moment — in the meantime, feel free to drop a note in the project enquiry form below or email connectjavid27@gmail.com directly!",
+        "Javi is currently synchronizing high-dimensional embeddings in the background! 🤖 Give me a quick second to reconnect, or reach out to Javid directly at connectjavid27@gmail.com!",
+        "Upgrading autonomous agent nodes! 🚀 Javi is optimizing response latency and will be right back with you. Feel free to explore the project matrix above in the meantime!"
+      ];
+      const randomFallback = wittyFallbacks[Math.floor(Math.random() * wittyFallbacks.length)];
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: "I am currently offline or disconnected from the backend server. Please ensure FastAPI is running."
+          content: randomFallback
         }
       ]);
     } finally {
@@ -309,7 +329,7 @@ export default function MascotChatbot() {
                         ? 'bg-copper text-white rounded-br-sm shadow-md'
                         : 'bg-white/[0.05] border border-white/10 text-ink/90 rounded-tl-sm'
                     }`}
-                    dangerouslySetInnerHTML={{ __html: m.content.replace(/\n/g, '<br/>') }}
+                    dangerouslySetInnerHTML={{ __html: formatMessageContent(m.content) }}
                   />
                 </div>
               ))}
