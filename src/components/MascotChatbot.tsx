@@ -13,7 +13,7 @@ interface ChatMessage {
 export default function MascotChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Welcome! Ask me about Javid's AI engineering work, multi-agent architectures, project case studies, or schedule a direct consultation." }
+    { role: 'assistant', content: "Hey! I'm Ask Javi. Ask me about Javid's AI projects, engineering stack, or book a direct consultation!" }
   ]);
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
