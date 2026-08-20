@@ -133,9 +133,14 @@ KEY_POOL = GeminiKeyPool()
 TOP_K = 4  # how many knowledge chunks to retrieve per question
 
 # ---------------------------------------------------------------------------
-# App setup
+# App setup (Hardened — Public docs and schemas disabled)
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Ask Javid API — Hardened RAG Agent & Enquiry Engine")
+app = FastAPI(
+    title="Ask Javid API",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
+)
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
@@ -1062,110 +1067,3 @@ def create_enquiry(req: EnquiryRequest, request: Request):
     except Exception as e:
         return {"status": "error", "message": f"Server error: {str(e)}"}
 
-@app.get("/api/admin/enquiries")
-def get_enquiries():
-    """Admin endpoint to view all stored enquiries."""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute("SELECT * FROM enquiries ORDER BY created_at DESC")
-        rows = [dict(r) for r in c.fetchall()]
-        conn.close()
-        return {"status": "success", "count": len(rows), "enquiries": rows}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@app.post("/api/test-email")
-def trigger_test_email():
-    """Trigger a sample project enquiry email to test rendering."""
-    test_name = "Alex Vance"
-    test_email = "alex.vance@techcorp.io"
-    test_service = "Multi-Agent Systems & LangGraph"
-    test_phone = "+1 4155552671"
-    test_message = "Hi Javid, we saw your PolicyPulse and LangGraph work. We need an autonomous multi-agent architecture for our healthcare clinical audit workflow. Would love to book a 30-min discovery call this week!"
-    test_ip = "198.51.100.42"
-
-    send_enquiry_email(test_name, test_email, test_service, test_phone, test_message, test_ip)
-    html_preview = generate_enquiry_html_email(test_name, test_email, test_service, test_phone, test_message, test_ip)
-
-    return {
-        "status": "success",
-        "message": f"Test HTML email generated and dispatched to {JAVID_EMAIL}!",
-        "html_preview_length": len(html_preview)
-    }
-
-@app.get("/api/admin/keys")
-def get_key_pool_status():
-    """Admin endpoint to view all configured Gemini keys, rate limit statuses, and cooldowns."""
-    now = time.time()
-    KEY_POOL.reload_keys()
-    
-    details = []
-    for k in KEY_POOL.keys:
-        masked = f"AIzaSy...{k[-6:]}" if len(k) >= 10 else "AIzaSy..."
-        status = KEY_POOL.key_status.get(k, {})
-        cooldown_remaining = max(0, int(status.get("cooldown_until", 0) - now))
-        is_active = (cooldown_remaining == 0)
-        details.append({
-            "key": masked,
-            "status": "active" if is_active else "rate_limited",
-            "cooldown_remaining_seconds": cooldown_remaining,
-            "fail_count": status.get("fail_count", 0),
-            "last_error": status.get("last_error", "")
-        })
-
-    rate_limited_count = sum(1 for d in details if d["status"] == "rate_limited")
-    active_count = len(details) - rate_limited_count
-
-    return {
-        "status": "success",
-        "model": GEMINI_MODEL,
-        "total_keys": len(KEY_POOL.keys),
-        "active_keys": active_count,
-        "rate_limited_keys": rate_limited_count,
-        "keys": details
-    }
-
-@app.post("/api/admin/test-rate-limit-alert")
-def trigger_test_rate_limit_alert():
-    """Trigger a sample rate-limit alert email to test inbox rendering."""
-    send_rate_limit_alert_email(
-        rate_limited_count=3,
-        total_keys=max(5, len(KEY_POOL.keys)),
-        active_count=2,
-        rate_limited_keys=KEY_POOL.keys[:3] if len(KEY_POOL.keys) >= 3 else ["AIzaSySampleKey1Test123", "AIzaSySampleKey2Test456", "AIzaSySampleKey3Test789"],
-        is_emergency=False
-    )
-    return {
-        "status": "success",
-        "message": f"Test rate-limit alert email successfully dispatched to {JAVID_EMAIL}!"
-    }
-
-# ---------------------------------------------------------------------------
-# Live Chat Endpoints
-# ---------------------------------------------------------------------------
-LIVE_MODE = False
-LIVE_MESSAGES = []
-
-class AdminReply(BaseModel):
-    reply: str
-
-@app.get("/api/admin/status")
-def admin_status():
-    return {"is_live": LIVE_MODE, "messages": LIVE_MESSAGES}
-
-@app.post("/api/admin/toggle")
-def admin_toggle():
-    global LIVE_MODE
-    LIVE_MODE = not LIVE_MODE
-    return {"status": "ok", "is_live": LIVE_MODE}
-
-@app.post("/api/admin/reply")
-def admin_reply(req: AdminReply):
-    LIVE_MESSAGES.append({"role": "Javid", "content": req.reply})
-    return {"status": "ok"}
-
-@app.get("/api/chat/poll")
-def chat_poll():
-    return {"is_live": LIVE_MODE, "messages": LIVE_MESSAGES}
