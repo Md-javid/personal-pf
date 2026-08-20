@@ -762,7 +762,7 @@ CRITICAL RULES (MINIMAL & CONCISE):
      - **Email:** <Email>
      - **Topic:** <Purpose>
      
-     [📅 Add to Google Calendar & Join Meet](https://calendar.google.com/calendar/render?action=TEMPLATE&text=Consultation+with+Mohamed+Javid+-+<ENCODED_PURPOSE>&details=Meeting+with+<ENCODED_NAME>+(<ENCODED_EMAIL>)%0APurpose:+<ENCODED_PURPOSE>%0ADate:+<ENCODED_DATE>+at+<ENCODED_TIME>&location=Google+Meet)
+     [CALENDAR_LINK]
      
      Javid has been notified via email & WhatsApp. Looking forward to speaking with you!
      [BOOKING_DATA: name=<Name> | email=<Email> | date=<Date> | time=<Time> | purpose=<Purpose>]"
@@ -855,8 +855,31 @@ def process_booking_if_present(raw_text: str) -> str:
     # Send email to Javid
     send_meeting_email(date=date, time=time_str, email=email, description=purpose, name=name)
 
+    # Reconstruct a 100% valid, URL-encoded Google Calendar link
+    clean_purpose = purpose.replace("+", " ")
+    clean_name = name.replace("+", " ")
+    clean_email = email.replace("+", " ")
+    clean_date = date.replace("+", " ")
+    clean_time = time_str.replace("+", " ")
+
+    gcal_title = urllib.parse.quote(f"Consultation with Mohamed Javid - {clean_purpose}")
+    gcal_details = urllib.parse.quote(f"Meeting with {clean_name} ({clean_email})\nTopic: {clean_purpose}\nDate: {clean_date} at {clean_time} (IST)")
+    gcal_url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={gcal_title}&details={gcal_details}&location=Google+Meet"
+    button_markdown = f"[📅 Add to Google Calendar & Join Meet]({gcal_url})"
+
     # Remove the internal tag from user-facing output
     clean_text = BOOKING_DATA_RE.sub("", raw_text).strip()
+
+    # Clean any messy LLM-generated calendar links and replace [CALENDAR_LINK]
+    clean_text = re.sub(r"\[.*?Add to Google Calendar.*?\]\(.*?\)", "", clean_text, flags=re.IGNORECASE | re.DOTALL)
+    clean_text = re.sub(r"https?://calendar\.google\.com[^\s\n]*", "", clean_text, flags=re.IGNORECASE)
+
+    if "[CALENDAR_LINK]" in clean_text:
+        clean_text = clean_text.replace("[CALENDAR_LINK]", button_markdown)
+    else:
+        clean_text += f"\n\n{button_markdown}"
+
+    clean_text = re.sub(r"\n{3,}", "\n\n", clean_text).strip()
     return clean_text
 
 

@@ -171,10 +171,10 @@ export default function MascotChatbot() {
 
   const formatMessageContent = (content: string) => {
     if (!content) return '';
-    // Replace markdown links [text](url) with styled HTML links
+    // Replace markdown links [text](url) with styled HTML button/links
     let formatted = content.replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-copper-soft underline font-semibold hover:text-copper transition-colors">$1 ↗</a>'
+      /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 my-1.5 px-3 py-1.5 rounded-xl bg-copper/20 border border-copper/40 text-copper-soft hover:bg-copper/30 text-xs font-semibold tracking-wide transition-all shadow-sm max-w-full break-all">$1 ↗</a>'
     );
     // Replace bold **text**
     formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -324,7 +324,7 @@ export default function MascotChatbot() {
                     </div>
                   )}
                   <div
-                    className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] text-xs sm:text-[13.5px] ${
+                    className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] text-xs sm:text-[13.5px] break-words [overflow-wrap:anywhere] ${
                       m.role === 'user'
                         ? 'bg-copper text-white rounded-br-sm shadow-md'
                         : 'bg-white/[0.05] border border-white/10 text-ink/90 rounded-tl-sm'
