@@ -13,7 +13,7 @@ interface ChatMessage {
 export default function MascotChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Hey! I'm Ask Javi. Ask me about Javid's AI projects, engineering stack, or book a direct consultation!" }
+    { role: 'assistant', content: "Hello! I am Ask Javi. Ask me about Javid's AI projects, engineering stack, or schedule a direct consultation." }
   ]);
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -174,7 +174,7 @@ export default function MascotChatbot() {
     // Replace markdown links [text](url) with styled HTML button/links
     let formatted = content.replace(
       /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 my-1.5 px-3 py-1.5 rounded-xl bg-copper/20 border border-copper/40 text-copper-soft hover:bg-copper/30 text-xs font-semibold tracking-wide transition-all shadow-sm max-w-full break-all">$1 ↗</a>'
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 my-1.5 px-3.5 py-1.5 rounded-xl bg-copper/20 border border-copper/40 text-copper-soft hover:bg-copper/30 text-xs font-semibold tracking-wide transition-all shadow-sm max-w-full break-all">$1</a>'
     );
     // Replace bold **text**
     formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -202,9 +202,9 @@ export default function MascotChatbot() {
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
     } catch {
       const wittyFallbacks = [
-        "Javi's neural synapses are briefly calibrating new agent graphs! ⚡ Back online in a moment — in the meantime, feel free to drop a note in the project enquiry form below or email connectjavid27@gmail.com directly!",
-        "Javi is currently synchronizing high-dimensional embeddings in the background! 🤖 Give me a quick second to reconnect, or reach out to Javid directly at connectjavid27@gmail.com!",
-        "Upgrading autonomous agent nodes! 🚀 Javi is optimizing response latency and will be right back with you. Feel free to explore the project matrix above in the meantime!"
+        "Ask Javi is currently calibrating high-throughput agent nodes. Back online in a moment — or feel free to drop a note in the project enquiry form below or email connectjavid27@gmail.com directly.",
+        "System pipelines are currently re-synchronizing with the server. Please allow a moment to reconnect, or reach out to Javid directly at connectjavid27@gmail.com.",
+        "Upgrading autonomous agent nodes. Javi is optimizing response latency and will be right back online. Feel free to explore the project matrix above in the meantime."
       ];
       const randomFallback = wittyFallbacks[Math.floor(Math.random() * wittyFallbacks.length)];
       setMessages(prev => [
