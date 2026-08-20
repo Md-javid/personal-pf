@@ -475,13 +475,16 @@ def create_google_calendar_event_with_meet(name: str, email: str, date_str: str,
     try:
         from googleapiclient.discovery import build
         import dateutil.parser
+        import dateutil.tz
 
         service = build('calendar', 'v3', credentials=creds)
         
         now = datetime.now()
         start_dt = None
         try:
-            start_dt = dateutil.parser.parse(f"{date_str} {time_str}", fuzzy=True)
+            tz_map = {"IST": dateutil.tz.gettz("Asia/Kolkata")}
+            clean_ts = re.sub(r"\bIST\b", "", f"{date_str} {time_str}", flags=re.IGNORECASE).strip()
+            start_dt = dateutil.parser.parse(clean_ts, fuzzy=True, tzinfos=tz_map)
         except Exception:
             start_dt = now + timedelta(days=1)
             start_dt = start_dt.replace(hour=19, minute=0, second=0, microsecond=0)
