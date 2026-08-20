@@ -35,12 +35,100 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 GEMINI_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/"
     f"{GEMINI_MODEL}:generateContent"
 )
+
+# ---------------------------------------------------------------------------
+# Multi-Gemini API Key Pool & Dynamic Failover Manager
+# ---------------------------------------------------------------------------
+class GeminiKeyPool:
+    """
+    Manages a pool of Gemini API keys with automatic failover and rate-limit tracking.
+    Supports GEMINI_API_KEYS (comma-separated), GEMINI_API_KEY_1..10, and GEMINI_API_KEY.
+    """
+    def __init__(self):
+        self.keys: List[str] = []
+        self.key_status: Dict[str, dict] = {}
+        self.last_3_keys_alert_time: float = 0.0
+        self.last_all_keys_alert_time: float = 0.0
+        self.reload_keys()
+
+    def reload_keys(self):
+        collected = []
+        # 1. Comma-separated list
+        raw_keys = os.getenv("GEMINI_API_KEYS", "")
+        if raw_keys:
+            collected.extend([k.strip() for k in raw_keys.split(",") if k.strip()])
+        # 2. Numbered keys GEMINI_API_KEY_1..10
+        for i in range(1, 15):
+            k = os.getenv(f"GEMINI_API_KEY_{i}", "").strip()
+            if k:
+                collected.append(k)
+        # 3. Single key fallback
+        single_k = os.getenv("GEMINI_API_KEY", "").strip()
+        if single_k:
+            collected.append(single_k)
+
+        seen = set()
+        self.keys = []
+        for k in collected:
+            if k not in seen:
+                seen.add(k)
+                self.keys.append(k)
+                if k not in self.key_status:
+                    self.key_status[k] = {"cooldown_until": 0.0, "fail_count": 0, "last_error": "", "failed_at": 0.0}
+
+    def get_available_keys(self) -> List[str]:
+        self.reload_keys()
+        now = time.time()
+        # Return keys whose cooldown has expired
+        avail = [k for k in self.keys if self.key_status.get(k, {}).get("cooldown_until", 0) <= now]
+        return avail if avail else self.keys
+
+    def mark_rate_limited(self, key: str, error_msg: str = "Rate limit / Quota exceeded"):
+        now = time.time()
+        # Cooldown for 5 minutes (300 seconds)
+        self.key_status[key] = {
+            "cooldown_until": now + 300,
+            "fail_count": self.key_status.get(key, {}).get("fail_count", 0) + 1,
+            "last_error": error_msg,
+            "failed_at": now
+        }
+        self.check_and_send_alerts()
+
+    def check_and_send_alerts(self):
+        now = time.time()
+        rate_limited_keys = [
+            k for k in self.keys 
+            if self.key_status.get(k, {}).get("cooldown_until", 0) > now
+        ]
+        active_keys = [k for k in self.keys if k not in rate_limited_keys]
+
+        # Condition 1: 3 or more keys are rate-limited
+        if len(rate_limited_keys) >= 3 and (now - self.last_3_keys_alert_time > 600):
+            self.last_3_keys_alert_time = now
+            send_rate_limit_alert_email(
+                rate_limited_count=len(rate_limited_keys),
+                total_keys=len(self.keys),
+                active_count=len(active_keys),
+                rate_limited_keys=rate_limited_keys,
+                is_emergency=(len(active_keys) == 0)
+            )
+        # Condition 2: All keys are exhausted
+        elif len(active_keys) == 0 and len(self.keys) > 0 and (now - self.last_all_keys_alert_time > 600):
+            self.last_all_keys_alert_time = now
+            send_rate_limit_alert_email(
+                rate_limited_count=len(rate_limited_keys),
+                total_keys=len(self.keys),
+                active_count=0,
+                rate_limited_keys=rate_limited_keys,
+                is_emergency=True
+            )
+
+KEY_POOL = GeminiKeyPool()
 
 TOP_K = 4  # how many knowledge chunks to retrieve per question
 
@@ -388,6 +476,181 @@ def send_meeting_email(date: str, time: str, email: str, description: str):
     except Exception as e:
         print(f"Error sending meeting email: {e}")
 
+def generate_rate_limit_alert_html(rate_limited_count: int, total_keys: int, active_count: int, rate_limited_keys: List[str], is_emergency: bool) -> str:
+    """Generate dark-mode luxury HTML email alert for Gemini API rate limits."""
+    status_title = "🚨 EMERGENCY: All Gemini API Keys Exhausted!" if is_emergency else f"⚠️ RATE LIMIT ALERT: {rate_limited_count} of {total_keys} Gemini Keys Exhausted"
+    badge_bg = "rgba(239, 68, 68, 0.2)" if is_emergency else "rgba(245, 158, 11, 0.2)"
+    badge_border = "rgba(239, 68, 68, 0.5)" if is_emergency else "rgba(245, 158, 11, 0.5)"
+    badge_color = "#F87171" if is_emergency else "#FBBF24"
+
+    masked_keys_html = ""
+    for k in rate_limited_keys:
+        masked = f"AIzaSy...{k[-6:]}" if len(k) >= 10 else "AIzaSy..."
+        masked_keys_html += f"""
+        <tr>
+          <td style="padding: 8px 12px; font-family: monospace; font-size: 12px; color: #EF4444; border-bottom: 1px solid rgba(255,255,255,0.06);">{masked}</td>
+          <td style="padding: 8px 12px; font-family: monospace; font-size: 12px; color: #94A3B8; border-bottom: 1px solid rgba(255,255,255,0.06);">Quota Exceeded (HTTP 429/403)</td>
+          <td style="padding: 8px 12px; font-family: monospace; font-size: 12px; color: #F59E0B; border-bottom: 1px solid rgba(255,255,255,0.06);">Cooldown (5m)</td>
+        </tr>
+        """
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini API Rate Limit Alert</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #060911; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #F8FAFC;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #060911; padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #0B0F19; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="padding: 30px 36px 20px 36px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, rgba(11, 15, 25, 0) 100%);">
+              <div style="display: inline-block; padding: 6px 14px; border-radius: 9999px; background: {badge_bg}; border: 1px solid {badge_border}; font-size: 12px; font-weight: 700; color: {badge_color}; font-family: monospace; letter-spacing: 0.05em; margin-bottom: 12px;">
+                {status_title}
+              </div>
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.02em;">
+                Ask Javid Production API Quota Monitor
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Summary Matrix -->
+          <tr>
+            <td style="padding: 24px 36px 10px 36px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td width="33%" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 11px; font-family: monospace; color: #64748B; text-transform: uppercase;">Total Keys</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #FFFFFF; margin-top: 4px;">{total_keys}</div>
+                  </td>
+                  <td width="5%"></td>
+                  <td width="33%" style="padding: 12px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 11px; font-family: monospace; color: #F87171; text-transform: uppercase;">Rate Limited</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #EF4444; margin-top: 4px;">{rate_limited_count}</div>
+                  </td>
+                  <td width="5%"></td>
+                  <td width="33%" style="padding: 12px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 11px; font-family: monospace; color: #34D399; text-transform: uppercase;">Active Keys</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #10B981; margin-top: 4px;">{active_count}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Table of Rate Limited Keys -->
+          <tr>
+            <td style="padding: 15px 36px;">
+              <div style="font-size: 12px; font-family: monospace; color: #94A3B8; margin-bottom: 8px; text-transform: uppercase;">Exhausted Key Details:</div>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: rgba(255,255,255,0.04);">
+                    <th align="left" style="padding: 8px 12px; font-size: 11px; font-family: monospace; color: #64748B;">API KEY</th>
+                    <th align="left" style="padding: 8px 12px; font-size: 11px; font-family: monospace; color: #64748B;">STATUS</th>
+                    <th align="left" style="padding: 8px 12px; font-size: 11px; font-family: monospace; color: #64748B;">RECOVERY</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {masked_keys_html}
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Instructions & Action Button -->
+          <tr>
+            <td style="padding: 10px 36px 30px 36px;">
+              <div style="background: rgba(217, 138, 74, 0.08); border-left: 3px solid #D98A4A; border-radius: 8px; padding: 14px 16px; font-size: 13px; color: #F0B87E; line-height: 1.5; margin-bottom: 20px;">
+                💡 <b>Immediate Action Required:</b><br/>
+                Add fresh API keys to your <code>.env</code> file or update repository secrets. You can add comma-separated keys under <code>GEMINI_API_KEYS</code> or <code>GEMINI_API_KEY_1..5</code>.
+              </div>
+
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <a href="https://aistudio.google.com/apikey" target="_blank" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #D98A4A 0%, #B86E30 100%); color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 12px;">
+                      🔑 Generate New Free Keys on Google AI Studio →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 16px 36px; background-color: rgba(0, 0, 0, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 11px; font-family: monospace; color: #64748B;">
+              mohamedjavid.dev Autonomous AI Sentinel • Active Model: {GEMINI_MODEL}
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+def send_rate_limit_alert_email(rate_limited_count: int, total_keys: int, active_count: int, rate_limited_keys: List[str], is_emergency: bool = False):
+    """Dispatches emergency email and WhatsApp alert to Javid when rate limits are exceeded."""
+    subject = f"🚨 [CRITICAL] {rate_limited_count} of {total_keys} Gemini API Keys Rate-Limited on Production!" if not is_emergency else f"🚨 [EMERGENCY] ALL Gemini API Keys Exhausted on mohamedjavid.dev!"
+    
+    # 1. WhatsApp Alert
+    send_whatsapp_notification(
+        f"🚨 GEMINI API ALERT!\n"
+        f"Rate-Limited: {rate_limited_count}/{total_keys}\n"
+        f"Active Keys: {active_count}\n"
+        f"Model: {GEMINI_MODEL}\n"
+        f"Action: Please add new keys to .env!"
+    )
+
+    # 2. HTML Email
+    html_content = generate_rate_limit_alert_html(rate_limited_count, total_keys, active_count, rate_limited_keys, is_emergency)
+    plain_text = (
+        f"🚨 GEMINI API RATE LIMIT ALERT\n"
+        f"==============================\n"
+        f"Rate Limited Keys: {rate_limited_count} / {total_keys}\n"
+        f"Remaining Active Keys: {active_count}\n"
+        f"Model in use: {GEMINI_MODEL}\n\n"
+        f"Please add fresh Gemini API keys to your .env or AWS EC2 environment:\n"
+        f"https://aistudio.google.com/apikey\n"
+    )
+
+    if not SMTP_USER or not SMTP_PASSWORD:
+        try:
+            print(f"\n[RATE-LIMIT ALERT DISPATCHED (Dev Mode)]:\n{plain_text}")
+        except Exception:
+            print(f"\n[RATE-LIMIT ALERT DISPATCHED]: {rate_limited_count}/{total_keys} keys exhausted.")
+        return
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = SMTP_USER
+        msg['To'] = JAVID_EMAIL
+
+        msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, [JAVID_EMAIL], msg.as_string())
+        try:
+            print(f"Rate-limit alert email successfully sent to {JAVID_EMAIL}")
+        except Exception:
+            pass
+    except Exception as e:
+        try:
+            print(f"Error sending rate-limit alert email via SMTP: {e}")
+        except Exception:
+            pass
+
 # ---------------------------------------------------------------------------
 # Pure Python Lightweight RAG index — built once at startup (Zero external C dependencies)
 # ---------------------------------------------------------------------------
@@ -585,10 +848,11 @@ def chat(req: ChatRequest, request: Request):
 
     context_chunks = retrieve(req.message)
 
-    if not GEMINI_API_KEY:
+    available_keys = KEY_POOL.get_available_keys()
+    if not available_keys:
         return ChatResponse(
             reply=(
-                "I am Ask Javid! Javid is an AI/ML Engineer specializing in LangGraph multi-agent systems, "
+                "I am Ask Javid! Javid is an AI Engineer specializing in LangGraph multi-agent systems, "
                 "GraphRAG retrieval, and full-stack development. Feel free to explore his projects above or book a consultation!"
             ),
             sources=context_chunks,
@@ -596,29 +860,45 @@ def chat(req: ChatRequest, request: Request):
 
     payload = build_prompt(req.message, context_chunks, [t.dict() for t in req.history])
 
-    try:
-        resp = requests.post(
-            GEMINI_URL,
-            params={"key": GEMINI_API_KEY},
-            json=payload,
-            timeout=20,
-        )
-    except requests.RequestException:
-        return ChatResponse(reply=NETWORK_ERROR_MSG, sources=context_chunks)
+    data = None
+    last_status = 500
 
-    if resp.status_code == 429:
+    # Dynamic failover loop across all available keys in the pool
+    for key in available_keys:
+        try:
+            resp = requests.post(
+                GEMINI_URL,
+                params={"key": key},
+                json=payload,
+                timeout=20,
+            )
+            last_status = resp.status_code
+
+            if resp.status_code == 200:
+                data = resp.json()
+                break # Successful response obtained
+
+            body_text = resp.text.lower()
+            if resp.status_code in [429, 403, 503] or "quota" in body_text or "resource_exhausted" in body_text or "rate_limit" in body_text:
+                masked = f"...{key[-6:]}" if len(key) >= 6 else "key"
+                print(f"[GEMINI KEY RATE-LIMITED] Key ({masked}) hit quota (HTTP {resp.status_code}). Rotating to next key in pool...")
+                KEY_POOL.mark_rate_limited(key, f"Status {resp.status_code}")
+                continue
+            else:
+                masked = f"...{key[-6:]}" if len(key) >= 6 else "key"
+                print(f"[GEMINI API ERROR] Key ({masked}) returned status {resp.status_code}: {resp.text[:100]}")
+                KEY_POOL.mark_rate_limited(key, f"Status {resp.status_code}")
+                continue
+        except requests.RequestException as e:
+            masked = f"...{key[-6:]}" if len(key) >= 6 else "key"
+            print(f"[GEMINI NETWORK ERROR] Key ({masked}) connection error: {e}")
+            KEY_POOL.mark_rate_limited(key, str(e))
+            continue
+
+    if not data:
+        KEY_POOL.check_and_send_alerts()
         return ChatResponse(reply=random.choice(QUOTA_JOKES), sources=context_chunks)
 
-    if resp.status_code != 200:
-        body_text = resp.text.lower()
-        if "quota" in body_text or "resource_exhausted" in body_text:
-            return ChatResponse(reply=random.choice(QUOTA_JOKES), sources=context_chunks)
-        return ChatResponse(
-            reply=f"An error occurred while generating the response (status {resp.status_code}).",
-            sources=context_chunks,
-        )
-
-    data = resp.json()
     try:
         parts = data["candidates"][0]["content"]["parts"]
         if "functionCall" in parts[0]:
@@ -813,6 +1093,53 @@ def trigger_test_email():
         "status": "success",
         "message": f"Test HTML email generated and dispatched to {JAVID_EMAIL}!",
         "html_preview_length": len(html_preview)
+    }
+
+@app.get("/api/admin/keys")
+def get_key_pool_status():
+    """Admin endpoint to view all configured Gemini keys, rate limit statuses, and cooldowns."""
+    now = time.time()
+    KEY_POOL.reload_keys()
+    
+    details = []
+    for k in KEY_POOL.keys:
+        masked = f"AIzaSy...{k[-6:]}" if len(k) >= 10 else "AIzaSy..."
+        status = KEY_POOL.key_status.get(k, {})
+        cooldown_remaining = max(0, int(status.get("cooldown_until", 0) - now))
+        is_active = (cooldown_remaining == 0)
+        details.append({
+            "key": masked,
+            "status": "active" if is_active else "rate_limited",
+            "cooldown_remaining_seconds": cooldown_remaining,
+            "fail_count": status.get("fail_count", 0),
+            "last_error": status.get("last_error", "")
+        })
+
+    rate_limited_count = sum(1 for d in details if d["status"] == "rate_limited")
+    active_count = len(details) - rate_limited_count
+
+    return {
+        "status": "success",
+        "model": GEMINI_MODEL,
+        "total_keys": len(KEY_POOL.keys),
+        "active_keys": active_count,
+        "rate_limited_keys": rate_limited_count,
+        "keys": details
+    }
+
+@app.post("/api/admin/test-rate-limit-alert")
+def trigger_test_rate_limit_alert():
+    """Trigger a sample rate-limit alert email to test inbox rendering."""
+    send_rate_limit_alert_email(
+        rate_limited_count=3,
+        total_keys=max(5, len(KEY_POOL.keys)),
+        active_count=2,
+        rate_limited_keys=KEY_POOL.keys[:3] if len(KEY_POOL.keys) >= 3 else ["AIzaSySampleKey1Test123", "AIzaSySampleKey2Test456", "AIzaSySampleKey3Test789"],
+        is_emergency=False
+    )
+    return {
+        "status": "success",
+        "message": f"Test rate-limit alert email successfully dispatched to {JAVID_EMAIL}!"
     }
 
 # ---------------------------------------------------------------------------
