@@ -469,6 +469,34 @@ def create_google_calendar_event_with_meet(name: str, email: str, date_str: str,
                 pass
             creds = None
 
+    if not creds and os.getenv("GOOGLE_REFRESH_TOKEN"):
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            
+            client_id = os.getenv("GOOGLE_CLIENT_ID")
+            client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+            refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN")
+            
+            creds = Credentials(
+                token=None,
+                refresh_token=refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                scopes=[
+                    'https://www.googleapis.com/auth/calendar.events',
+                    'https://www.googleapis.com/auth/calendar'
+                ]
+            )
+            creds.refresh(Request())
+        except Exception as e:
+            try:
+                print(f"Error loading Google credentials from .env: {e}")
+            except Exception:
+                pass
+            creds = None
+
     if not creds:
         return None
 
