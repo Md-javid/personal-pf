@@ -328,8 +328,8 @@ export default function MascotChatbot() {
 
             {/* Quick Action Chips */}
             <div className="px-3 sm:px-3.5 py-2 border-t border-white/10 flex flex-wrap gap-1.5 bg-white/[0.01]">
-              <button onClick={() => sendMessage("Schedule a consultation with Javid")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-copper/30 bg-copper/10 text-copper-soft flex items-center gap-1.5">
-                <Calendar className="w-3 h-3" /> Schedule Consultation
+              <button onClick={() => sendMessage("How can I get in touch or book a consultation with Javid?")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-copper/30 bg-copper/10 text-copper-soft flex items-center gap-1.5">
+                <Calendar className="w-3 h-3" /> Book Consultation
               </button>
               <button onClick={() => sendMessage("What are his core skills and tech stack?")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
                 <Cpu className="w-3 h-3" /> Core Stack
@@ -337,8 +337,8 @@ export default function MascotChatbot() {
               <button onClick={() => sendMessage("Tell me about his multi-agent workflows")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
                 <Bot className="w-3 h-3" /> Agent Workflows
               </button>
-              <button onClick={() => sendMessage("I want to talk to Javid directly")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
-                <MessageSquare className="w-3 h-3" /> Talk to Javid
+              <button onClick={() => sendMessage("How do I contact Javid directly?")} className="chip hover:bg-white/10 transition-colors text-[11px] py-1 px-2.5 rounded-lg border border-white/10 text-mute hover:text-ink flex items-center gap-1.5">
+                <MessageSquare className="w-3 h-3" /> Contact Javid
               </button>
             </div>
 
