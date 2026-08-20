@@ -18,13 +18,13 @@ export default function MascotChatbot() {
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Drag state (Desktop only)
+  // Position & Desktop Drag State
   const mascotRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
+  const didDragRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
   const initialPosRef = useRef({ left: 0, top: 0 });
-  const dragDistRef = useRef(0);
 
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({
     bottom: '24px',
@@ -36,22 +36,23 @@ export default function MascotChatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Desktop Mouse Drag Listener (Disabled on mobile to ensure zero touch lag)
+  // Desktop Mouse Drag Listener (Zero touch listeners to ensure instant mobile taps)
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       const dx = e.clientX - startPosRef.current.x;
       const dy = e.clientY - startPosRef.current.y;
-      dragDistRef.current = Math.hypot(dx, dy);
+      const dist = Math.hypot(dx, dy);
 
-      if (dragDistRef.current > 6) {
+      if (dist > 8) {
+        didDragRef.current = true;
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
 
         let newLeft = initialPosRef.current.left + dx;
         let newTop = initialPosRef.current.top + dy;
 
-        // Clamp inside safe viewport bounds
+        // Clamp inside safe viewport bounds (Never overlap navbar at top 85px)
         newLeft = Math.max(16, Math.min(newLeft, winWidth - 90));
         newTop = Math.max(90, Math.min(newTop, winHeight - 110));
 
@@ -68,9 +69,6 @@ export default function MascotChatbot() {
     const onMouseUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
-        if (dragDistRef.current <= 6) {
-          setIsOpen(prev => !prev);
-        }
       }
     };
 
@@ -84,9 +82,9 @@ export default function MascotChatbot() {
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
+    if (e.button !== 0) return; // Left-click only
     isDraggingRef.current = true;
-    dragDistRef.current = 0;
+    didDragRef.current = false;
     startPosRef.current = { x: e.clientX, y: e.clientY };
 
     if (mascotRef.current) {
@@ -95,11 +93,20 @@ export default function MascotChatbot() {
     }
   };
 
+  const toggleChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
+    setIsOpen(prev => !prev);
+  };
+
   const getChatPanelStyle = (): React.CSSProperties => {
     if (typeof window === 'undefined') return { bottom: '100px', right: '20px', position: 'fixed' };
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
-    const NAV_HEIGHT = 85; // Never overlap the navbar
+    const NAV_HEIGHT = 85;
 
     // Mobile: Full width card cleanly pinned above bottom
     if (winWidth < 768) {
@@ -133,12 +140,10 @@ export default function MascotChatbot() {
       let panelTop = topNum - panelHeight - 12;
       let transformOrigin = 'bottom right';
 
-      // If mascot is near top, place panel below mascot
       if (spaceAbove < panelHeight && spaceBelow > spaceAbove) {
         panelTop = Math.min(topNum + 100, winHeight - panelHeight - 16);
         transformOrigin = 'top right';
       } else {
-        // Enforce NAV_HEIGHT clamp so it NEVER exceeds the top bar
         panelTop = Math.max(NAV_HEIGHT + 10, panelTop);
       }
 
@@ -202,13 +207,9 @@ export default function MascotChatbot() {
         style={posStyle}
         className="z-50 flex flex-col items-end select-none cursor-pointer group active:scale-95 transition-transform"
         onMouseDown={handleMouseDown}
-        onClick={(e) => {
-          // On mobile or direct clicks, toggle immediately
-          if (dragDistRef.current <= 6) {
-            setIsOpen(prev => !prev);
-          }
-        }}
+        onClick={toggleChat}
         role="button"
+        tabIndex={0}
         aria-label="Ask Javi AI Mascot"
       >
         {/* Waving Speech Badge */}
@@ -222,8 +223,8 @@ export default function MascotChatbot() {
         </div>
 
         {/* Mascot Robot SVG */}
-        <div className="relative group-hover:scale-105 transition-transform duration-200">
-          <svg viewBox="0 0 100 120" className="w-16 h-20 sm:w-20 sm:h-24 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)] pointer-events-auto">
+        <div className="relative group-hover:scale-105 transition-transform duration-200 pointer-events-auto">
+          <svg viewBox="0 0 100 120" className="w-16 h-20 sm:w-20 sm:h-24 drop-shadow-[0_10px_25px_rgba(59,130,246,0.5)]">
             <defs>
               <linearGradient id="mascotBlue" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#4F46E5"/>
